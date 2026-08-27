@@ -1,0 +1,5 @@
+-- HPEE PostgreSQL Initial Extension Setup
+CREATE EXTENSION IF NOT EXISTS "uuid-ossp";
+CREATE EXTENSION IF NOT EXISTS "pgcrypto";
+CREATE EXTENSION IF NOT EXISTS "postgis";
+CREATE EXTENSION IF NOT EXISTS "postgis_topology";

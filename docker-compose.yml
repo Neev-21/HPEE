@@ -1,0 +1,22 @@
+services:
+  postgres:
+    image: postgis/postgis:17-3.5
+    container_name: hpee-postgres
+    restart: unless-stopped
+    environment:
+      POSTGRES_DB: hpee
+      POSTGRES_USER: hpee_admin
+      POSTGRES_PASSWORD: hpee_dev_password
+    ports:
+      - "5432:5432"
+    volumes:
+      - hpee_postgres_data:/var/lib/postgresql/data
+      - ./database/scripts/init_postgis.sql:/docker-entrypoint-initdb.d/init_postgis.sql:ro
+    healthcheck:
+      test: ["CMD-SHELL", "pg_isready -U hpee_admin -d hpee"]
+      interval: 5s
+      timeout: 5s
+      retries: 5
+
+volumes:
+  hpee_postgres_data:
