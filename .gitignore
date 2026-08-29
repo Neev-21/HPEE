@@ -29,23 +29,32 @@ ENV/
 # Environment Variables & Secrets
 .env
 *.env.local
+.env.*.local
 
-# IDEs
+# IDEs & Editors
 .vscode/
 .idea/
 *.swp
 *.swo
+*.sublime-workspace
+*.sublime-project
 
-# Testing & Coverage
+# Testing, Logs & Coverage
 .pytest_cache/
 .coverage
 htmlcov/
+*.log
 
-# Database / Local storage
+# Database & Local Container Storage
 *.sqlite3
 *.db
 hpee_postgres_data/
 
-# OS Files
+# OS & System Files
 .DS_Store
 Thumbs.db
+desktop.ini
+
+# Scratch & Temporary Development Artifacts
+scratch/
+skills/
