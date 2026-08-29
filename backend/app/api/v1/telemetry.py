@@ -153,10 +153,46 @@ def trigger_event_detection(reading_id: int, node_id: str):
         )
         logger.info("Full intelligence pipeline completed for event %s", event_id)
 
+        # -----------------------------------------------------------------------
+        # 7. Legal Complaint Auto-Generation (GSPCB Form-A PDF)
+        # -----------------------------------------------------------------------
+        from backend.app.models.evidence import SourceAttribution
+        top_culprit = (
+            db.query(SourceAttribution)
+            .filter(SourceAttribution.event_id == event_id)
+            .order_by(SourceAttribution.rank.asc())
+            .first()
+        )
+
+        if top_culprit and top_culprit.probability_score >= 0.70:
+            logger.info("High confidence attribution (%.2f). Auto-generating GSPCB Form-A complaint...", top_culprit.probability_score)
+            try:
+                from backend.app.engines.complaint.service import generate_complaint_for_event
+                complaint = generate_complaint_for_event(db=db, event_id=str(event_id))
+                logger.info("Auto-generated complaint: %s (Status: %s)", complaint.complaint_number, complaint.status)
+            except Exception as ce:
+                logger.error("Failed to auto-generate complaint: %s", ce, exc_info=True)
+
+            # -----------------------------------------------------------------------
+            # 8. Multilingual Alert Dispatch (WhatsApp/SMS to Sarpanch & Citizens)
+            # -----------------------------------------------------------------------
+            try:
+                from backend.app.engines.notification.service import dispatch_pollution_alert
+                alerts = dispatch_pollution_alert(
+                    db=db,
+                    event_id=str(event_id),
+                    channel="whatsapp",
+                    lang="gu", # Default Gujarat rural locale
+                )
+                logger.info("Dispatched %d automated multilingual alerts for event %s", len(alerts), event_id)
+            except Exception as ne:
+                logger.error("Failed to dispatch alert notifications: %s", ne, exc_info=True)
+
     except Exception as e:
         logger.error("Error in async intelligence pipeline: %s", e, exc_info=True)
     finally:
         db.close()
+
 
 
 

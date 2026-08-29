@@ -49,6 +49,7 @@ htmlcov/
 *.sqlite3
 *.db
 hpee_postgres_data/
+storage/complaints/*.pdf
 
 # OS & System Files
 .DS_Store
