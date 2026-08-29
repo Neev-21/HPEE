@@ -17,13 +17,14 @@ def run_simulator(file_path: str, mode: str, node_id: str, api_url: str):
         body = {
             "node_id": node_id,
             "timestamp": payload["timestamp"],
+            "node_health": {
+                "battery_percent": 95,
+                "signal_strength": -65,
+                "status": "active"
+            },
             "measurements": {
-                "pm25": payload["pm25"],
-                "pm10": payload["pm10"],
-                "so2": payload["so2"],
-                "nox": payload["nox"],
-                "no2": payload["no2"],
-                "co": payload["co"]
+                "pm25": {"value": payload["pm25"], "unit": "ug/m3"} if payload["pm25"] is not None else None,
+                "so2": {"value": payload["so2"], "unit": "ppb"} if payload["so2"] is not None else None
             },
             "status": "active"
         }

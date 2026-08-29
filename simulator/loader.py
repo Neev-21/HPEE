@@ -5,7 +5,7 @@ def load_dataset(file_path: str) -> pd.DataFrame:
     """
     Loads the CPCB Excel dataset and standardizes columns.
     """
-    df = pd.read_excel(file_path, skiprows=17) # Skip metadata header rows based on previous analysis
+    df = pd.read_excel(file_path, skiprows=16) # Skip metadata header rows based on previous analysis
     # Assuming columns: From_Date, To_Date, PM2.5, PM10, NO, NO2, NOx, SO2, CO
     df = df.rename(columns={
         "From Date": "timestamp",

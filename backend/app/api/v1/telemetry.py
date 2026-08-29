@@ -17,80 +17,147 @@ from backend.app.engines.evidence_fusion.service import run_evidence_fusion_and_
 
 def trigger_event_detection(reading_id: int, node_id: str):
     """
-    Simulates Event Detection and triggers Evidence Fusion & Source Attribution asynchronously.
+    Full intelligence pipeline triggered asynchronously after telemetry ingestion:
+    1. Event Detection (anomaly z-score on PM2.5 + SO2)
+    2. Classification (XGBoost or rule-based fallback)
+    3. Weather fetch (Data-B from OpenMeteo)
+    4. Evidence Fusion + Source Attribution (Data-A + Data-B + Data-C)
     """
-    logger.info(f"Event Detection Engine triggered for reading_id={reading_id}, node_id={node_id}")
-    
-    # In a real pipeline, Event Detection would analyze the rolling window and create a PollutionEvent.
-    # For now, we simulate an event context and trigger the Fusion Engine directly.
+    logger.info("Intelligence pipeline triggered for reading_id=%s node_id=%s", reading_id, node_id)
+
     try:
         from backend.app.db.session import SessionLocal
-        from backend.app.models.sensor import SensorReading
+        from backend.app.models.sensor import SensorReading, SensorNode
         from backend.app.engines.event_detection.service import evaluate_reading
         from backend.app.engines.classification.service import classify_event
+        from backend.app.engines.weather.service import fetch_weather
         from backend.app.engines.common.types import EventContext
         from backend.app.engines.evidence_fusion.service import run_evidence_fusion_and_attribution
-        
+
         db = SessionLocal()
-        
-        # 1. Fetch the reading
+
+        # -----------------------------------------------------------------------
+        # 1. Fetch the reading + node location
+        # -----------------------------------------------------------------------
         reading = db.query(SensorReading).filter(SensorReading.reading_id == reading_id).first()
         if not reading:
             return
-            
-        # 2. Event Detection Engine
-        event_id = evaluate_reading(db, reading)
-        
-        if event_id:
-            logger.info(f"Event detected/updated! Event ID: {event_id}")
-            
-            # Fetch the updated event
-            from backend.app.models.pollution_event import PollutionEvent
-            event = db.query(PollutionEvent).filter(PollutionEvent.event_id == event_id).first()
-            
-            # 3. Classification Engine
-            raw = reading.raw_payload or {}
-            meas = raw.get("measurements", {})
-            
-            # Extract additional pollutants if present in raw payload for classification
-            pm10 = meas.get("pm10", {}).get("value") if isinstance(meas.get("pm10"), dict) else None
-            nox = meas.get("nox", {}).get("value") if isinstance(meas.get("nox"), dict) else None
-            co = meas.get("co", {}).get("value") if isinstance(meas.get("co"), dict) else None
 
-            classify_event(
-                db=db,
-                event_id=str(event_id),
-                peak_pm25=event.peak_pm25,
-                peak_pm10=pm10,
-                peak_so2=event.peak_so2,
-                peak_nox=nox,
-                peak_co=co,
-                hour_of_day=reading.recorded_at.hour
-            )
-            
-            # 4. Evidence Fusion & Source Attribution Engine
-            context = EventContext(
-                event_id=event_id,
-                start_time=event.started_at,
-                node_ids=[node_id],
-                centroid_lat=21.6734, # Ideally from node location
-                centroid_lon=73.0102
-            )
-            
-            run_evidence_fusion_and_attribution(
-                db=db,
-                context=context,
-                wind_direction=reading.wind_direction or 135.0,
-                weather_observation_time=datetime.now(timezone.utc),
-                peak_pm25=event.peak_pm25,
-                peak_so2=event.peak_so2
-            )
-            logger.info(f"Full intelligence pipeline completed for event {event_id}")
-            
+        # Get node coordinates for weather API call
+        node = db.query(SensorNode).filter(SensorNode.node_id == node_id).first()
+        node_lat = 21.6320  # Default: Ankleshwar area
+        node_lon = 73.0150
+        if node and node.location is not None:
+            # PostGIS: extract lat/lon from location geometry
+            try:
+                from sqlalchemy import text as sa_text
+                result = db.execute(
+                    sa_text("SELECT ST_Y(location::geometry), ST_X(location::geometry) "
+                            "FROM sensor_nodes WHERE node_id = :nid"),
+                    {"nid": node_id}
+                ).fetchone()
+                if result:
+                    node_lat, node_lon = float(result[0]), float(result[1])
+            except Exception:
+                pass
+
+        # -----------------------------------------------------------------------
+        # 2. Event Detection Engine (real diurnal baseline + multi-pollutant)
+        # -----------------------------------------------------------------------
+        event_id = evaluate_reading(db, reading)
+
+        if not event_id:
+            return  # No anomaly — pipeline ends here
+
+        logger.info("Event detected/updated! Event ID: %s", event_id)
+
+        from backend.app.models.pollution_event import PollutionEvent
+        event = db.query(PollutionEvent).filter(PollutionEvent.event_id == event_id).first()
+
+        # -----------------------------------------------------------------------
+        # 3. Classification Engine (XGBoost → fallback rules)
+        # -----------------------------------------------------------------------
+        raw  = reading.raw_payload or {}
+        meas = raw.get("measurements", {})
+
+        pm10_val = meas.get("pm10", {}).get("value") if isinstance(meas.get("pm10"), dict) else None
+        nox_val  = meas.get("nox",  {}).get("value") if isinstance(meas.get("nox"),  dict) else None
+        no2_val  = meas.get("no2",  {}).get("value") if isinstance(meas.get("no2"),  dict) else None
+        co_val   = meas.get("co",   {}).get("value") if isinstance(meas.get("co"),   dict) else None
+
+        ts = reading.recorded_at
+        classify_event(
+            db=db,
+            event_id=str(event_id),
+            peak_pm25=event.peak_pm25,
+            peak_pm10=pm10_val,
+            peak_so2=event.peak_so2,
+            peak_nox=nox_val,
+            peak_co=co_val,
+            hour_of_day=ts.hour,
+            peak_no2=no2_val,
+            wind_speed=reading.wind_speed,
+            temperature=reading.temperature,
+            humidity=reading.humidity,
+            month=ts.month,
+            day_of_week=ts.weekday(),
+            is_weekend=(ts.weekday() >= 5),
+        )
+
+        # -----------------------------------------------------------------------
+        # 4. Weather Intelligence Engine (Data-B) — fetch real wind direction
+        # -----------------------------------------------------------------------
+        weather = fetch_weather(
+            lat=node_lat,
+            lon=node_lon,
+            sensor_wind_speed=reading.wind_speed,
+            sensor_wind_direction=reading.wind_direction,
+            sensor_temperature=reading.temperature,
+            sensor_humidity=reading.humidity,
+        )
+        logger.info(
+            "Weather (Data-B): source=%s wind=%.1f m/s dir=%.0f deg quality=%.2f",
+            weather.source, weather.wind_speed_ms, weather.wind_direction_deg, weather.quality_score
+        )
+
+        # -----------------------------------------------------------------------
+        # 5. Build detected_pollutants dict for pollutant match scoring
+        # -----------------------------------------------------------------------
+        detected_pollutants = {
+            "pm25": event.peak_pm25,
+            "so2":  event.peak_so2,
+            "nox":  nox_val,
+            "no2":  no2_val,
+            "co":   co_val,
+        }
+
+        # -----------------------------------------------------------------------
+        # 6. Evidence Fusion + Source Attribution (Data-A + Data-B + Data-C)
+        # -----------------------------------------------------------------------
+        context = EventContext(
+            event_id=event_id,
+            start_time=event.started_at,
+            node_ids=[node_id],
+            centroid_lat=node_lat,
+            centroid_lon=node_lon,
+        )
+
+        run_evidence_fusion_and_attribution(
+            db=db,
+            context=context,
+            wind_direction=weather.wind_direction_deg,
+            weather_observation_time=weather.fetched_at,
+            peak_pm25=event.peak_pm25,
+            peak_so2=event.peak_so2,
+            detected_pollutants=detected_pollutants,
+        )
+        logger.info("Full intelligence pipeline completed for event %s", event_id)
+
     except Exception as e:
-        logger.error(f"Error in async intelligence pipeline: {e}")
+        logger.error("Error in async intelligence pipeline: %s", e, exc_info=True)
     finally:
         db.close()
+
 
 
 @router.post("/readings", response_model=TelemetryIngestResponse, status_code=status.HTTP_201_CREATED)
@@ -156,7 +223,7 @@ def ingest_telemetry(payload: TelemetryIngestRequest, background_tasks: Backgrou
         humidity=hum_val,
         wind_speed=ws_val,
         wind_direction=wd_val,
-        raw_payload=payload.model_dump()
+        raw_payload=payload.model_dump(mode="json")
     )
     
     db.add(reading)

@@ -5,7 +5,7 @@ from sqlalchemy import (
     String, Boolean, Float, Text, DateTime,
     ForeignKey, text, func
 )
-from sqlalchemy.dialects.postgresql import UUID
+from sqlalchemy.dialects.postgresql import UUID, JSONB
 from sqlalchemy.orm import Mapped, mapped_column, relationship
 from geoalchemy2 import Geography
 from backend.app.db.base import Base, TimestampMixin
@@ -61,6 +61,16 @@ class IndustrialSite(Base, TimestampMixin):
         server_default=text("true"),
         nullable=False,
         doc="Operational status"
+    )
+    declared_process: Mapped[Optional[str]] = mapped_column(
+        Text,
+        nullable=True,
+        doc="Declared manufacturing process (e.g. H-acid synthesis, Sulphonation, Azo coupling)"
+    )
+    emission_profile: Mapped[Optional[dict]] = mapped_column(
+        JSONB,
+        nullable=True,
+        doc="Relative emission intensities per pollutant (0-1). Keys: so2, nox, pm25, co, no2"
     )
 
     # Relationships
