@@ -6,12 +6,12 @@
    Strict 0px border-radius. GOV.UK / USWDS inspired.
    ===================================================== */
 :root {
-  --bg: #ffffff;
-  --bg-subtle: #f8fafc;
-  --fg: #09090b;
+  --bg: #fffff0; /* Ivory */
+  --bg-subtle: #fdfbf7; /* Very light cream */
+  --fg: #2c2c2c; /* Softer black */
   --fg-muted: #52525b;
-  --border: #27272a;
-  --border-light: #e4e4e7;
+  --border: #d6d3d1; /* Stone border */
+  --border-light: #e7e5e4;
 
   --red: #dc2626;
   --red-bg: #fef2f2;
@@ -23,12 +23,11 @@
   --blue: #1d4ed8;
 
   --font-sans: 'Public Sans', -apple-system, BlinkMacSystemFont, 'Segoe UI', sans-serif;
-  --font-mono: 'IBM Plex Mono', 'Courier New', monospace;
+  --font-mono: ui-monospace, SFMono-Regular, Menlo, Monaco, Consolas, "Liberation Mono", "Courier New", monospace;
 }
 
 * {
   box-sizing: border-box;
-  border-radius: 0 !important;
 }
 
 html, body {
@@ -36,6 +35,7 @@ html, body {
   background: var(--bg);
   color: var(--fg);
   -webkit-font-smoothing: antialiased;
+  font-size: 16px; /* Slightly larger base font size */
 }
 
 /* Monospace class for metrics */

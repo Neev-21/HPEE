@@ -28,6 +28,7 @@ export default function GisMap({
   const mapInstanceRef = useRef<any>(null);
   // eslint-disable-next-line @typescript-eslint/no-explicit-any
   const layersRef = useRef<any[]>([]);
+  const resizeObserverRef = useRef<ResizeObserver | null>(null);
 
   useEffect(() => {
     if (!mapRef.current || mapInstanceRef.current) return;
@@ -36,14 +37,30 @@ export default function GisMap({
     import('leaflet').then((L) => {
       if (!mapRef.current) return;
       const map = L.map(mapRef.current, { zoomControl: true }).setView([21.62, 73.02], 12);
+      
+      // Use CartoDB light_all for instant loading (no strict API key required for dev)
       L.tileLayer('https://{s}.basemaps.cartocdn.com/light_all/{z}/{x}/{y}{r}.png', {
         maxZoom: 19,
         attribution: '&copy; OpenStreetMap contributors &copy; CARTO',
       }).addTo(map);
+      
       mapInstanceRef.current = map;
+
+      // Fix "gray tiles" / cutoffs by invalidating size when container resizes
+      const resizeObserver = new ResizeObserver(() => {
+        if (mapInstanceRef.current) {
+          mapInstanceRef.current.invalidateSize();
+        }
+      });
+      resizeObserver.observe(mapRef.current);
+      resizeObserverRef.current = resizeObserver;
     });
 
     return () => {
+      if (resizeObserverRef.current) {
+        resizeObserverRef.current.disconnect();
+        resizeObserverRef.current = null;
+      }
       if (mapInstanceRef.current) {
         mapInstanceRef.current.remove();
         mapInstanceRef.current = null;

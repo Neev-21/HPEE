@@ -5,6 +5,18 @@ const withNextIntl = createNextIntlPlugin('./src/i18n/request.ts');
 
 const nextConfig: NextConfig = {
   reactStrictMode: true,
+  async rewrites() {
+    return [
+      {
+        source: '/api/v1/:path*',
+        destination: 'http://127.0.0.1:8000/api/v1/:path*',
+      },
+      {
+        source: '/health',
+        destination: 'http://127.0.0.1:8000/health',
+      }
+    ];
+  },
 };
 
 export default withNextIntl(nextConfig);

@@ -64,13 +64,13 @@ export default function OverviewPage() {
         setLoading(false);
       }
     }
-    load();
+    load().catch(() => { /* backend offline */ });
   }, [tCommon]);
 
   return (
-    <div style={{ display: 'grid', gridTemplateColumns: '1fr 460px', height: 'calc(100vh - 118px)' }}>
+    <div className="flex flex-col md:flex-row h-[calc(100vh-118px)] w-full">
       {/* ---- LEFT: GIS Map ---- */}
-      <div style={{ position: 'relative', borderRight: '2px solid #000' }}>
+      <div className="relative flex-1 border-b-2 md:border-b-0 md:border-r-2 border-stone-300 min-h-[50vh] md:min-h-0 overflow-hidden">
         {/* Map panel header */}
         <div style={{
           position: 'absolute', top: 0, left: 0, right: 0,
@@ -107,7 +107,7 @@ export default function OverviewPage() {
       </div>
 
       {/* ---- RIGHT: Incident Dossier Panel ---- */}
-      <div style={{ overflowY: 'auto', background: '#fff' }}>
+      <div className="w-full md:w-[460px] overflow-y-auto bg-[#fffff0] flex-shrink-0">
         {/* Active Alert Banner */}
         {activeEvent && (
           <div style={{

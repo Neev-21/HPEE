@@ -7,10 +7,10 @@ import {
   fetchComplaint,
   generateComplaint,
   submitComplaint,
-  getComplaintPdfUrl,
   type PollutionEvent,
   type Complaint,
 } from '@/lib/api';
+import { getCurrentUser, type GpcbUser } from '@/lib/auth';
 
 const MONTH_NAMES = [
   'January','February','March','April','May','June',
@@ -28,8 +28,12 @@ export default function CompliancePage() {
   const [generating, setGenerating] = useState(false);
   const [submitMsg, setSubmitMsg] = useState('');
   const [loading, setLoading] = useState(true);
+  const [user, setUser] = useState<GpcbUser | null>(null);
 
   useEffect(() => {
+    const timer = setTimeout(() => {
+      setUser(getCurrentUser());
+    }, 0);
     fetchPollutionEvents()
       .then((evs) => {
         setEvents(evs);
@@ -37,8 +41,10 @@ export default function CompliancePage() {
         setSelectedEvent(active);
         if (active) loadComplaint(active.event_id);
       })
+      .catch(() => { /* backend offline — user will see loading state */ })
       .finally(() => setLoading(false));
-  // eslint-disable-next-line react-hooks/exhaustive-deps
+
+    return () => clearTimeout(timer);
   }, []);
 
   async function loadComplaint(eventId: string) {
@@ -172,7 +178,7 @@ export default function CompliancePage() {
           </div>
 
           {/* If no complaint yet, show generate button */}
-          {!complaint && (
+          {!complaint && user?.role === 'sarpanch' && (
             <div style={{
               border: '1px dashed #e4e4e7', padding: '24px', textAlign: 'center', marginBottom: 16,
             }}>
@@ -183,9 +189,10 @@ export default function CompliancePage() {
                 onClick={handleGenerate}
                 disabled={generating}
                 style={{
-                  background: '#000', color: '#fff', border: 'none',
+                  background: '#2c2c2c', color: '#fffff0', border: 'none',
                   padding: '10px 20px', fontFamily: 'inherit', fontWeight: 700,
                   fontSize: '12px', cursor: generating ? 'wait' : 'pointer',
+                  borderRadius: '6px'
                 }}
               >
                 {generating ? 'Generating...' : 'Generate GPCB Form A-17'}
@@ -323,35 +330,52 @@ export default function CompliancePage() {
                 </div>
               )}
 
-              {/* Action Buttons */}
+              {/* Action Buttons - Role Based */}
               <div style={{ display: 'flex', gap: 8 }}>
-                <a
-                  href={getComplaintPdfUrl(complaint.complaint_id)}
-                  target="_blank"
-                  rel="noreferrer"
-                  style={{
-                    background: '#000', color: '#fff',
-                    padding: '10px 16px', fontFamily: 'inherit',
-                    fontWeight: 700, fontSize: '12px',
-                    textDecoration: 'none', display: 'inline-block',
-                  }}
-                >
-                  {t('downloadPdf')}
-                </a>
-                <button
-                  onClick={handleSubmit}
-                  disabled={submitting || complaint.status === 'submitted'}
-                  style={{
-                    background: complaint.status === 'submitted' ? '#f0fdf4' : '#fff',
-                    color: complaint.status === 'submitted' ? '#16a34a' : '#000',
-                    border: `1px solid ${complaint.status === 'submitted' ? '#16a34a' : '#000'}`,
-                    padding: '10px 16px', fontFamily: 'inherit',
-                    fontWeight: 700, fontSize: '12px',
-                    cursor: submitting || complaint.status === 'submitted' ? 'not-allowed' : 'pointer',
-                  }}
-                >
-                  {complaint.status === 'submitted' ? '✓ Submitted to GPCB' : submitting ? 'Submitting...' : t('submitGpcb')}
-                </button>
+                {user?.role === 'sarpanch' && (
+                  <>
+                    <button
+                      onClick={() => window.print()}
+                      style={{
+                        background: '#2c2c2c', color: '#fffff0',
+                        padding: '10px 16px', fontFamily: 'inherit',
+                        fontWeight: 700, fontSize: '12px',
+                        border: 'none', cursor: 'pointer',
+                        borderRadius: '6px'
+                      }}
+                    >
+                      {t('downloadPdf')}
+                    </button>
+                    <button
+                      onClick={handleSubmit}
+                      disabled={submitting || complaint.status === 'submitted'}
+                      style={{
+                        background: complaint.status === 'submitted' ? '#f0fdf4' : '#fff',
+                        color: complaint.status === 'submitted' ? '#16a34a' : '#2c2c2c',
+                        border: `1px solid ${complaint.status === 'submitted' ? '#16a34a' : '#2c2c2c'}`,
+                        padding: '10px 16px', fontFamily: 'inherit',
+                        fontWeight: 700, fontSize: '12px',
+                        cursor: submitting || complaint.status === 'submitted' ? 'not-allowed' : 'pointer',
+                        borderRadius: '6px'
+                      }}
+                    >
+                      {complaint.status === 'submitted' ? '✓ Submitted to GPCB' : submitting ? 'Submitting...' : t('submitGpcb')}
+                    </button>
+                  </>
+                )}
+                {user?.role === 'inspector' && (
+                  <button
+                    onClick={() => alert('Evidence verified by Inspector.')}
+                    style={{
+                      background: '#1d4ed8', color: '#fff', border: 'none',
+                      padding: '10px 16px', fontFamily: 'inherit',
+                      fontWeight: 700, fontSize: '12px', cursor: 'pointer',
+                      borderRadius: '6px'
+                    }}
+                  >
+                    Verify Evidence
+                  </button>
+                )}
               </div>
             </>
           )}

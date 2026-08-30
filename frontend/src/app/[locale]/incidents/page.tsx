@@ -17,16 +17,17 @@ export default function IncidentsPage() {
   const [events, setEvents] = useState<PollutionEvent[]>([]);
   const [filter, setFilter] = useState('');
   const [loading, setLoading] = useState(true);
+  const [viewingEvent, setViewingEvent] = useState<PollutionEvent | null>(null);
 
   useEffect(() => {
     fetchPollutionEvents()
       .then(setEvents)
-      .catch(console.error)
+      .catch(() => { /* backend offline */ })
       .finally(() => setLoading(false));
 
     // Auto-refresh every 60s
     const id = setInterval(() => {
-      fetchPollutionEvents().then(setEvents).catch(console.error);
+      fetchPollutionEvents().then(setEvents).catch(() => {});
     }, 60_000);
     return () => clearInterval(id);
   }, []);
@@ -76,10 +77,10 @@ export default function IncidentsPage() {
       </div>
 
       {/* Table */}
-      <div style={{ overflowX: 'auto' }}>
-        <table style={{ minWidth: 900 }}>
+      <div className="overflow-x-auto">
+        <table className="min-w-[900px] w-full text-left border-collapse">
           <thead>
-            <tr style={{ background: '#f8fafc', borderBottom: '2px solid #000' }}>
+            <tr className="bg-[#fdfbf7] border-b-2 border-[#d6d3d1]">
               {[
                 t('colSeverity'), t('colIncidentId'), t('colTime'),
                 t('colSite'), t('colReading'), t('colStatus'), t('colAction'),
@@ -152,16 +153,20 @@ export default function IncidentsPage() {
                       </span>
                     </td>
                     <td style={{ padding: '8px 12px' }}>
-                      <button style={{
-                        background: '#000',
-                        color: '#fff',
-                        border: 'none',
-                        padding: '4px 10px',
-                        fontSize: '11px',
-                        fontWeight: 600,
-                        cursor: 'pointer',
-                        fontFamily: 'inherit',
-                      }}>
+                      <button 
+                        onClick={() => setViewingEvent(ev)}
+                        style={{
+                          background: '#2c2c2c',
+                          color: '#fffff0',
+                          border: 'none',
+                          padding: '6px 12px',
+                          fontSize: '11px',
+                          fontWeight: 600,
+                          cursor: 'pointer',
+                          fontFamily: 'inherit',
+                          borderRadius: '6px'
+                        }}
+                      >
                         {t('view')}
                       </button>
                     </td>
@@ -172,6 +177,40 @@ export default function IncidentsPage() {
           </tbody>
         </table>
       </div>
+
+      {/* View Modal */}
+      {viewingEvent && (
+        <div className="fixed inset-0 z-50 flex items-center justify-center bg-black/50 p-4">
+          <div className="bg-[#fffff0] border border-[#d6d3d1] rounded-lg shadow-xl w-full max-w-lg p-6">
+            <h3 className="text-lg font-bold mb-4 text-[#2c2c2c]">Incident Details</h3>
+            <div className="space-y-3 text-sm text-stone-700">
+              <p><strong>ID:</strong> {viewingEvent.event_id}</p>
+              <p><strong>Location:</strong> {viewingEvent.village_name}</p>
+              <p><strong>Status:</strong> <span className="uppercase font-bold text-amber-600">{viewingEvent.status}</span></p>
+              <p><strong>Severity:</strong> <span className="uppercase font-bold text-red-600">{viewingEvent.severity}</span></p>
+              <p><strong>Detected At:</strong> {new Date(viewingEvent.detected_at).toLocaleString('en-IN')}</p>
+              <div className="grid grid-cols-2 gap-4 mt-4">
+                <div className="p-3 bg-[#fdfbf7] border border-stone-200 rounded-md">
+                  <div className="text-xs font-bold text-stone-500 uppercase">PM2.5 Peak</div>
+                  <div className="text-lg font-mono text-red-600">{viewingEvent.peak_pm25 ?? '—'} µg/m³</div>
+                </div>
+                <div className="p-3 bg-[#fdfbf7] border border-stone-200 rounded-md">
+                  <div className="text-xs font-bold text-stone-500 uppercase">SO2 Peak</div>
+                  <div className="text-lg font-mono text-red-600">{viewingEvent.peak_so2 ?? '—'} ppb</div>
+                </div>
+              </div>
+            </div>
+            <div className="mt-6 flex justify-end">
+              <button 
+                onClick={() => setViewingEvent(null)}
+                className="bg-[#2c2c2c] text-[#fffff0] px-4 py-2 rounded-md font-bold text-sm"
+              >
+                Close
+              </button>
+            </div>
+          </div>
+        </div>
+      )}
     </div>
   );
 }

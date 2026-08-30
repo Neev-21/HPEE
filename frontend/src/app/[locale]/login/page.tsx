@@ -4,11 +4,10 @@ import { useTranslations } from 'next-intl';
 import { useState } from 'react';
 import { useRouter, useParams } from 'next/navigation';
 import { login } from '@/lib/auth';
-
 const ROLE_OPTIONS = [
-  { value: 'admin', emailHint: 'admin@gpcb.gov.in' },
-  { value: 'inspector', emailHint: 'inspector.ankleshwar@gpcb.gov.in' },
-  { value: 'sarpanch', emailHint: 'sarpanch.piraman@gujarat.gov.in' },
+  { value: 'admin', emailHint: 'admin@gpcb.gov.in', passHint: 'gpcb@admin2026' },
+  { value: 'inspector', emailHint: 'inspector.ankleshwar@gpcb.gov.in', passHint: 'inspector@gpcb2026' },
+  { value: 'sarpanch', emailHint: 'sarpanch.piraman@gujarat.gov.in', passHint: 'sarpanch@piraman2026' },
 ];
 
 export default function LoginPage() {
@@ -23,9 +22,9 @@ export default function LoginPage() {
   const [error, setError] = useState('');
   const [loading, setLoading] = useState(false);
 
-  function handleRoleSelect(emailHint: string) {
+  function handleRoleSelect(emailHint: string, passHint: string) {
     setEmail(emailHint);
-    setPassword('');
+    setPassword(passHint);
     setError('');
   }
 
@@ -33,9 +32,6 @@ export default function LoginPage() {
     e.preventDefault();
     setLoading(true);
     setError('');
-
-    // Small artificial delay for UX
-    await new Promise((r) => setTimeout(r, 600));
 
     const user = login(email, password);
     if (user) {
@@ -52,22 +48,25 @@ export default function LoginPage() {
       display: 'flex',
       alignItems: 'center',
       justifyContent: 'center',
-      background: '#f8fafc',
+      background: '#fdfbf7',
     }}>
       <div style={{
         width: '100%', maxWidth: 440,
         background: '#fff',
-        border: '2px solid #000',
+        border: '1px solid #d6d3d1',
+        borderRadius: '8px',
+        overflow: 'hidden',
+        boxShadow: '0 4px 6px -1px rgb(0 0 0 / 0.1), 0 2px 4px -2px rgb(0 0 0 / 0.1)'
       }}>
         {/* Header */}
         <div style={{
-          background: '#000', color: '#fff',
+          background: '#2c2c2c', color: '#fffff0',
           padding: '16px 20px',
         }}>
-          <div style={{ fontWeight: 700, fontSize: '16px', letterSpacing: '0.5px' }}>
+          <div style={{ fontWeight: 700, fontSize: '18px', letterSpacing: '0.5px' }}>
             {t('title')}
           </div>
-          <div style={{ fontSize: '12px', color: '#a1a1aa', marginTop: 2 }}>
+          <div style={{ fontSize: '13px', color: '#a8a29e', marginTop: 2 }}>
             {t('subtitle')}
           </div>
         </div>
@@ -75,14 +74,14 @@ export default function LoginPage() {
         {/* Official notice */}
         <div style={{
           background: '#fef2f2', borderBottom: '1px solid #fca5a5',
-          padding: '8px 20px', fontSize: '11px', color: '#7f1d1d',
+          padding: '8px 20px', fontSize: '12px', color: '#7f1d1d',
         }}>
           ⚠️ {t('officialNotice')}
         </div>
 
         {/* Role selector */}
-        <div style={{ padding: '16px 20px', borderBottom: '1px solid #e4e4e7' }}>
-          <div style={{ fontSize: '11px', fontWeight: 700, textTransform: 'uppercase', letterSpacing: '0.5px', marginBottom: 8, color: '#71717a' }}>
+        <div style={{ padding: '16px 20px', borderBottom: '1px solid #e7e5e4' }}>
+          <div style={{ fontSize: '12px', fontWeight: 700, textTransform: 'uppercase', letterSpacing: '0.5px', marginBottom: 8, color: '#78716c' }}>
             {t('role')}
           </div>
           <div style={{ display: 'flex', gap: 8 }}>
@@ -92,12 +91,13 @@ export default function LoginPage() {
                 <button
                   key={opt.value}
                   type="button"
-                  onClick={() => handleRoleSelect(opt.emailHint)}
+                  onClick={() => handleRoleSelect(opt.emailHint, opt.passHint)}
                   style={{
-                    flex: 1, padding: '6px 0',
-                    background: isActive ? '#000' : '#fff',
-                    color: isActive ? '#fff' : '#000',
-                    border: '1px solid #000',
+                    flex: 1, padding: '8px 0',
+                    background: isActive ? '#2c2c2c' : '#f5f5f4',
+                    color: isActive ? '#fffff0' : '#44403c',
+                    border: isActive ? '1px solid #2c2c2c' : '1px solid #d6d3d1',
+                    borderRadius: '6px',
                     fontSize: '11px', fontWeight: 700,
                     cursor: 'pointer', fontFamily: 'inherit',
                     textTransform: 'uppercase', letterSpacing: '0.5px',
@@ -122,10 +122,10 @@ export default function LoginPage() {
               onChange={(e) => setEmail(e.target.value)}
               required
               style={{
-                width: '100%', padding: '8px 10px',
-                border: '1px solid #27272a', outline: 'none',
-                fontFamily: 'var(--font-mono)', fontSize: '12px',
-                background: '#f8fafc',
+                width: '100%', padding: '10px',
+                border: '1px solid #d6d3d1', outline: 'none',
+                fontFamily: 'var(--font-sans)', fontSize: '14px',
+                background: '#fdfbf7', borderRadius: '6px'
               }}
             />
           </div>
@@ -139,10 +139,10 @@ export default function LoginPage() {
               onChange={(e) => setPassword(e.target.value)}
               required
               style={{
-                width: '100%', padding: '8px 10px',
-                border: '1px solid #27272a', outline: 'none',
-                fontFamily: 'var(--font-mono)', fontSize: '12px',
-                background: '#f8fafc',
+                width: '100%', padding: '10px',
+                border: '1px solid #d6d3d1', outline: 'none',
+                fontFamily: 'var(--font-sans)', fontSize: '14px',
+                background: '#fdfbf7', borderRadius: '6px'
               }}
             />
           </div>
@@ -151,7 +151,7 @@ export default function LoginPage() {
             <div style={{
               padding: '8px 10px', background: '#fef2f2',
               border: '1px solid #dc2626', color: '#dc2626',
-              fontSize: '12px', marginBottom: 12,
+              fontSize: '12px', marginBottom: 12, borderRadius: '6px'
             }}>
               {error}
             </div>
@@ -161,11 +161,12 @@ export default function LoginPage() {
             type="submit"
             disabled={loading}
             style={{
-              width: '100%', padding: '10px',
-              background: '#000', color: '#fff',
+              width: '100%', padding: '12px',
+              background: '#2c2c2c', color: '#fffff0',
               border: 'none', fontFamily: 'inherit',
-              fontWeight: 700, fontSize: '13px',
+              fontWeight: 700, fontSize: '14px',
               letterSpacing: '0.5px', cursor: loading ? 'wait' : 'pointer',
+              borderRadius: '6px'
             }}
           >
             {loading ? t('loginLoading') : t('loginButton')}
@@ -173,7 +174,7 @@ export default function LoginPage() {
         </form>
 
         {/* Dev credentials hint */}
-        <div style={{ padding: '0 20px 16px', fontSize: '10px', color: '#a1a1aa', lineHeight: 1.8 }}>
+        <div style={{ padding: '0 20px 16px', fontSize: '11px', color: '#a8a29e', lineHeight: 1.6 }}>
           DEV CREDENTIALS: admin@gpcb.gov.in / gpcb@admin2026<br />
           inspector.ankleshwar@gpcb.gov.in / inspector@gpcb2026<br />
           sarpanch.piraman@gujarat.gov.in / sarpanch@piraman2026

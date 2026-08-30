@@ -24,7 +24,10 @@ export default function GovHeader() {
   const [user, setUser] = useState<GpcbUser | null>(null);
 
   useEffect(() => {
-    setUser(getCurrentUser());
+    const timer = setTimeout(() => {
+      setUser(getCurrentUser());
+    }, 0);
+    return () => clearTimeout(timer);
   }, []);
 
   function switchLocale(newLocale: string) {
@@ -65,133 +68,75 @@ export default function GovHeader() {
       </div>
 
       {/* Main header */}
-      <header style={{
-        background: '#fff',
-        borderBottom: '3px solid #000',
-        padding: '10px 16px',
-        display: 'flex',
-        justifyContent: 'space-between',
-        alignItems: 'center',
-      }}>
+      <header className="bg-[#fffff0] border-b-[3px] border-stone-300 p-3 md:px-4 flex flex-col md:flex-row justify-between items-center gap-4">
         {/* Branding */}
-        <div style={{ display: 'flex', alignItems: 'center', gap: '12px' }}>
+        <div className="flex items-center gap-3">
           {/* GPCB Emblem placeholder */}
-          <div style={{
-            width: 36,
-            height: 42,
-            background: '#000',
-            color: '#fff',
-            display: 'flex',
-            alignItems: 'center',
-            justifyContent: 'center',
-            fontSize: '9px',
-            fontWeight: 700,
-            textAlign: 'center',
-            lineHeight: 1.2,
-            padding: '3px',
-            flexShrink: 0,
-          }}>
+          <div className="w-9 h-11 bg-[#2c2c2c] text-[#fffff0] flex items-center justify-center text-[9px] font-bold text-center leading-[1.2] p-1 shrink-0 rounded-sm">
             GPCB<br />GOG
           </div>
           <div>
-            <h1 style={{
-              fontSize: '16px',
-              fontWeight: 700,
-              textTransform: 'uppercase',
-              letterSpacing: '0.5px',
-              lineHeight: 1.2,
-              margin: 0,
-            }}>
+            <h1 className="text-base font-bold uppercase tracking-wide leading-[1.2] m-0 text-[#2c2c2c]">
               {t('title')}
             </h1>
-            <p style={{ fontSize: '11px', color: '#52525b', margin: 0 }}>
+            <p className="text-[11px] text-stone-500 m-0">
               {t('subtitle')}
             </p>
           </div>
         </div>
 
         {/* Right side: lang switcher + user */}
-        <div style={{ display: 'flex', alignItems: 'center', gap: '12px' }}>
+        <div className="flex items-center gap-3">
           {/* Language switcher */}
-          <div style={{ display: 'flex', border: '1px solid #000' }}>
+          <div className="flex border border-[#2c2c2c] rounded-md overflow-hidden">
             {LOCALES.map((loc) => (
               <button
                 key={loc.code}
                 onClick={() => switchLocale(loc.code)}
-                style={{
-                  background: locale === loc.code ? '#000' : '#fff',
-                  color: locale === loc.code ? '#fff' : '#000',
-                  border: 'none',
-                  borderRight: '1px solid #000',
-                  padding: '5px 10px',
-                  fontSize: '11px',
-                  fontWeight: 600,
-                  cursor: 'pointer',
-                  fontFamily: 'inherit',
-                  lineHeight: 1,
-                }}
+                className={`px-3 py-1.5 text-[11px] font-semibold cursor-pointer border-r last:border-r-0 border-[#2c2c2c] ${
+                  locale === loc.code ? 'bg-[#2c2c2c] text-[#fffff0]' : 'bg-[#fffff0] text-[#2c2c2c]'
+                }`}
               >
                 {loc.label}
               </button>
             ))}
           </div>
 
-          {/* User pill */}
-          {user && (
-            <div style={{ display: 'flex', alignItems: 'center', gap: '8px' }}>
-              <span style={{
-                fontSize: '11px',
-                fontFamily: 'var(--font-mono)',
-                color: '#3f3f46',
-              }}>
+          {/* User pill or Login */}
+          {user ? (
+            <div className="flex items-center gap-2">
+              <span className="text-[11px] font-mono text-stone-600 hidden md:inline-block">
                 {user.role.toUpperCase()} / {user.name.toUpperCase()}
               </span>
               <button
                 onClick={handleLogout}
-                style={{
-                  background: '#000',
-                  color: '#fff',
-                  border: 'none',
-                  padding: '4px 10px',
-                  fontSize: '11px',
-                  fontWeight: 600,
-                  cursor: 'pointer',
-                  fontFamily: 'inherit',
-                }}
+                className="bg-[#2c2c2c] text-[#fffff0] px-3 py-1.5 text-[11px] font-semibold rounded-md hover:bg-black"
               >
                 {tNav('logout')}
               </button>
             </div>
+          ) : (
+            <Link
+              href={`/${locale}/login`}
+              className="bg-[#2c2c2c] text-[#fffff0] px-3 py-1.5 text-[11px] font-semibold rounded-md hover:bg-black no-underline"
+            >
+              LOGIN
+            </Link>
           )}
         </div>
       </header>
 
       {/* Navigation strip */}
-      <nav style={{
-        background: '#f8fafc',
-        borderBottom: '1px solid #e4e4e7',
-        padding: '0 16px',
-        display: 'flex',
-        alignItems: 'center',
-        gap: '0',
-      }}>
+      <nav className="bg-[#fdfbf7] border-b border-stone-200 px-4 flex items-center overflow-x-auto whitespace-nowrap scrollbar-hide">
         {navItems.map((item) => {
           const isActive = pathname === item.href || (item.key === 'overview' && pathname === `/${locale}`);
           return (
             <Link
               key={item.key}
               href={item.href}
-              style={{
-                display: 'inline-block',
-                padding: '8px 14px',
-                fontSize: '12px',
-                fontWeight: 700,
-                letterSpacing: '0.5px',
-                textDecoration: 'none',
-                color: isActive ? '#000' : '#71717a',
-                borderBottom: isActive ? '3px solid #000' : '3px solid transparent',
-                background: 'transparent',
-              }}
+              className={`inline-block px-4 py-3 text-[13px] font-bold tracking-wide no-underline ${
+                isActive ? 'text-[#2c2c2c] border-b-[3px] border-[#2c2c2c]' : 'text-stone-500 border-b-[3px] border-transparent hover:text-stone-800'
+              }`}
             >
               {item.label}
             </Link>
