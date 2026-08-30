@@ -18,5 +18,14 @@ services:
       timeout: 5s
       retries: 5
 
+  mosquitto:
+    image: eclipse-mosquitto:2
+    container_name: hpee-mosquitto
+    restart: unless-stopped
+    ports:
+      - "1883:1883"
+    volumes:
+      - ./hardware_tests/mosquitto.conf:/mosquitto/config/mosquitto.conf:ro
+
 volumes:
   hpee_postgres_data:
