@@ -17,11 +17,17 @@ def run_evidence_fusion_and_attribution(
     wind_direction: float,
     weather_observation_time: datetime,
     peak_pm25: float = None,
-    peak_so2: float = None
+    peak_so2: float = None,
+    detected_pollutants: dict = None,
 ) -> None:
     """
     Main entrypoint for the Data Fusion & Intelligence layer.
     Runs attribution, creates evidence records, and persists results.
+
+    Args:
+        detected_pollutants: dict with keys so2, nox, pm25, co, no2 (raw readings)
+                             Passed to source attribution for cosine similarity matching.
+                             If None, attribution uses a neutral score of 0.5.
     """
     try:
         # 1. Calculate base evidence factors
@@ -36,7 +42,8 @@ def run_evidence_fusion_and_attribution(
             db=db, 
             context=context, 
             wind_direction=wind_direction, 
-            data_quality=data_quality
+            data_quality=data_quality,
+            detected_pollutants=detected_pollutants,
         )
         
         # 3. Create Evidence Records

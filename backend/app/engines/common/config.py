@@ -1,5 +1,6 @@
 import os
-from pydantic import BaseModel, BaseSettings
+from pydantic import BaseModel
+from pydantic_settings import BaseSettings
 
 class EngineConfig(BaseSettings):
     SCORING_VERSION: str = "source-score-0.1.0"

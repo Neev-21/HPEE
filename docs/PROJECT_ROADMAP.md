@@ -42,12 +42,13 @@ This document serves as the single source of truth for the phased development an
 ---
 
 ## 📡 Phase 5 — Physical System & Hardware
-*Status: Scheduled*
+*Status: In Progress*
 - [ ] **ESP32 Node Firmware** (C++/Arduino/ESP-IDF with NTP time sync and power management)
 - [ ] **Sensor Interfacing** (PMS5003 for PM2.5/PM10, Electrochemical SO2, BME280)
 - [ ] **Anemometer & Wind Vane Integration** (Wind speed & cardinal direction drivers)
 - [ ] **Power Management System** (Solar + LiFePO4 battery monitoring & telemetry)
-- [ ] **MQTT Ingestion Broker & Consumer** (Mosquitto/EMQX broker + async backend consumer)
+- [x] **MQTT Ingestion Broker** (Local Mosquitto container added with a Serial-to-MQTT testing bridge)
+- [ ] **MQTT Consumer** (Async backend consumer)
 - [ ] **Field Deployment Guide** (Mounting, geolocation calibration, village association)
 
 ---
