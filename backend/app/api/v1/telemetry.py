@@ -193,6 +193,23 @@ def trigger_event_detection(reading_id: int, node_id: str):
             except Exception as ne:
                 logger.error("Failed to dispatch alert notifications: %s", ne, exc_info=True)
 
+        # Broadcast pollution alert to WebSocket clients
+        from backend.app.core.websocket import manager
+        
+        manager.broadcast_sync({
+            "type": "POLLUTION_ALERT",
+            "event_id": str(event_id),
+            "village_name": event.village_name or "Unknown",
+            "severity": event.severity,
+            "started_at": event.started_at.isoformat() if event.started_at else None,
+            "peak_so2": event.peak_so2,
+            "peak_pm25": event.peak_pm25,
+            "primary_culprit": {
+                "name": top_culprit.name if top_culprit else "Unknown",
+                "probability_score": float(top_culprit.probability_score) if top_culprit else 0.0,
+            }
+        })
+
     except Exception as e:
         logger.error("Error in async intelligence pipeline: %s", e, exc_info=True)
     finally:
@@ -273,6 +290,16 @@ def ingest_telemetry(payload: TelemetryIngestRequest, background_tasks: Backgrou
 
     # Trigger Event Detection asynchronously
     background_tasks.add_task(trigger_event_detection, reading.reading_id, reading.node_id)
+
+    # Broadcast telemetry update to WebSocket clients
+    from backend.app.core.websocket import manager
+    manager.broadcast_sync({
+        "type": "TELEMETRY_UPDATE",
+        "node_id": reading.node_id,
+        "pm25": pm25_val,
+        "so2": so2_val,
+        "timestamp": reading.recorded_at.isoformat() if reading.recorded_at else None
+    })
 
     return TelemetryIngestResponse(
         status="success",

@@ -19,7 +19,7 @@ jobs:
           POSTGRES_USER: hpee_admin
           POSTGRES_PASSWORD: hpee_dev_password
         ports:
-          - 5432:5432
+          - 5433:5432
         options: >-
           --health-cmd pg_isready
           --health-interval 10s
@@ -48,6 +48,6 @@ jobs:
 
       - name: Run Test Suite
         env:
-          DATABASE_URL: postgresql+psycopg://hpee_admin:hpee_dev_password@localhost:5432/hpee_test
+          DATABASE_URL: postgresql+psycopg://hpee_admin:hpee_dev_password@localhost:5433/hpee_test
         run: |
           pytest -v tests/

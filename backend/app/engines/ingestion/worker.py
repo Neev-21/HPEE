@@ -12,8 +12,8 @@ logger = logging.getLogger(__name__)
 
 # Configuration via Environment Variables
 MQTT_BROKER = os.getenv("MQTT_BROKER", "localhost")
-MQTT_PORT = int(os.getenv("MQTT_PORT", "1883"))
-API_URL = os.getenv("API_URL", "http://localhost:8000/api/v1/sensor/readings")
+MQTT_PORT = int(os.getenv("MQTT_PORT", "1884"))
+API_URL = os.getenv("API_URL", "http://localhost:8100/api/v1/sensor/readings")
 MQTT_TOPIC = os.getenv("MQTT_TOPIC", "hpee/telemetry/#")
 
 # Mapping hardware values to API schema expectations

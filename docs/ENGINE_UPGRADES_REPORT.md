@@ -31,8 +31,8 @@ tests\test_upgraded_engines.py .....                                     [100%]
 
 ## 🚀 Live Pipeline Verification
 
-1. **Docker Container:** `hpee-postgres` running on port 5432.
-2. **FastAPI Backend:** Listening on `http://127.0.0.1:8000`.
+1. **Docker Container:** `hpee-postgres` running on port 5433 (mapped to 5432 internally).
+2. **FastAPI Backend:** Listening on `http://127.0.0.1:8100`.
 3. **End-to-End Simulation:** Sent 3 consecutive surge readings (PM2.5=230 µg/m³, SO2=195 ppb) from `HPEE-ANK-001`.
 4. **Triggered Chain:**
    - Ingestion API (HTTP 201)

@@ -23,7 +23,7 @@ def main():
     parser.add_argument("--port", type=str, default="COM3", help="Serial port (e.g., COM3, /dev/ttyUSB0)")
     parser.add_argument("--baud", type=int, default=9600, help="Baud rate")
     parser.add_argument("--broker", type=str, default="127.0.0.1", help="MQTT Broker IP")
-    parser.add_argument("--mqtt-port", type=int, default=1883, help="MQTT Broker Port")
+    parser.add_argument("--mqtt-port", type=int, default=1884, help="MQTT Broker Port")
     args = parser.parse_args()
 
     # 1. Initialize MQTT Client

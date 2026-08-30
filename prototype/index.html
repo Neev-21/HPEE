@@ -389,7 +389,7 @@
     </div>
     <div class="status-item">LOCATION: PIRAMAN VILLAGE (ANKLESHWAR)</div>
     <div class="status-item">WIND: 2.4 m/s @ 135° (SE VECTOR)</div>
-    <div class="status-item" style="margin-left: auto;">API: ONLINE (PORT 8000)</div>
+    <div class="status-item" style="margin-left: auto;">API: ONLINE (PORT 8100)</div>
   </div>
 
   <!-- 4. Split Main Workspace -->
@@ -483,7 +483,7 @@
             e3b0c44298fc1c149afbf4c8996fb92427ae41e4649b934ca495991b7852b855
           </div>
           <div class="btn-group">
-            <a href="http://127.0.0.1:8000/api/v1/complaints/GSPCB-HPEE-2026-ANK-0001/pdf" target="_blank" class="btn btn-primary" id="btn-pdf">
+            <a href="http://127.0.0.1:8100/api/v1/complaints/GSPCB-HPEE-2026-ANK-0001/pdf" target="_blank" class="btn btn-primary" id="btn-pdf">
               ⬇ Download Form-A PDF
             </a>
             <button class="btn btn-secondary" onclick="alert('Complaint Submitted to GSPCB Regional Officer (Ack #GSPCB-ACK-88392)')" id="btn-submit">
@@ -603,7 +603,7 @@
     `);
 
     // Fetch dynamic Plume Cone from our live API (or render fallback)
-    fetch('http://127.0.0.1:8000/api/v1/gis/plume-cone?wind_direction=135&reach_km=4.0')
+    fetch('http://127.0.0.1:8100/api/v1/gis/plume-cone?wind_direction=135&reach_km=4.0')
       .then(res => res.json())
       .then(data => {
         L.geoJSON(data, {

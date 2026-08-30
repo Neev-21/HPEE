@@ -8,7 +8,7 @@ services:
       POSTGRES_USER: hpee_admin
       POSTGRES_PASSWORD: hpee_dev_password
     ports:
-      - "5432:5432"
+      - "5433:5432"
     volumes:
       - hpee_postgres_data:/var/lib/postgresql/data
       - ./database/scripts/init_postgis.sql:/docker-entrypoint-initdb.d/init_postgis.sql:ro
@@ -23,7 +23,7 @@ services:
     container_name: hpee-mosquitto
     restart: unless-stopped
     ports:
-      - "1883:1883"
+      - "1884:1883"
     volumes:
       - ./hardware_tests/mosquitto.conf:/mosquitto/config/mosquitto.conf:ro
 
@@ -32,8 +32,8 @@ services:
     container_name: hpee-api
     restart: unless-stopped
     ports:
-      - "8000:8000"
-    command: ["uvicorn", "backend.app.main:app", "--host", "0.0.0.0", "--port", "8000"]
+      - "8100:8100"
+    command: ["uvicorn", "backend.app.main:app", "--host", "0.0.0.0", "--port", "8100"]
     environment:
       - DATABASE_URL=postgresql+psycopg://hpee_admin:hpee_dev_password@postgres:5432/hpee
     depends_on:
@@ -48,7 +48,7 @@ services:
     environment:
       - MQTT_BROKER=mosquitto
       - MQTT_PORT=1883
-      - API_URL=http://api:8000/api/v1/sensor/readings
+      - API_URL=http://api:8100/api/v1/sensor/readings
     depends_on:
       - mosquitto
       - api

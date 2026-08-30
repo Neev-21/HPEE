@@ -17,7 +17,7 @@ class Settings(BaseSettings):
     SECRET_KEY: str = "dev-secret-key-32-chars-long-change-in-prod"
 
     POSTGRES_SERVER: str = "localhost"
-    POSTGRES_PORT: int = 5432
+    POSTGRES_PORT: int = 5433
     POSTGRES_USER: str = "hpee_admin"
     POSTGRES_PASSWORD: str = "hpee_dev_password"
     POSTGRES_DB: str = "hpee"

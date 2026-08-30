@@ -541,7 +541,7 @@ View Evidence: https://hpee.in/event/9b1deb4d
 
 ## 6. API Reference
 
-Base URL: `http://localhost:8000` (dev) / `https://api.hpee.in` (prod)
+Base URL: `http://localhost:8100` (dev) / `https://api.hpee.in` (prod)
 Auth: **JWT Bearer Token** (except public endpoints)
 
 ### Full API Endpoint Table (from Figma)

@@ -79,7 +79,7 @@ pip install -r requirements.txt
 ```bash
 docker compose up -d
 ```
-*Note: PostGIS container initializes on port `5432` with database `hpee`, user `hpee_admin`, password `hpee_dev_password`.*
+*Note: PostGIS container initializes mapped to port `5433` with database `hpee`, user `hpee_admin`, password `hpee_dev_password`.*
 
 ### 3.4. Run Alembic Database Migrations
 ```bash
@@ -104,11 +104,11 @@ pytest -v tests/
 | Parameter | Development Value |
 |---|---|
 | **Host** | `localhost` |
-| **Port** | `5432` |
+| **Port** | `5433` |
 | **Database** | `hpee` |
 | **User** | `hpee_admin` |
 | **Password** | `hpee_dev_password` |
-| **Connection URL** | `postgresql+psycopg://hpee_admin:hpee_dev_password@localhost:5432/hpee` |
+| **Connection URL** | `postgresql+psycopg://hpee_admin:hpee_dev_password@localhost:5433/hpee` |
 
 ---
 
@@ -139,8 +139,8 @@ To completely reset the database, re-run all migrations, load seed data, and exe
 
 ### Option 1: Docker (Recommended)
 1. Run `docker-compose up -d`. This spins up:
-   - **PostgreSQL + PostGIS** on port `5432`.
-   - **Mosquitto MQTT Broker** on port `1883` (for local hardware testing).
+   - **PostgreSQL + PostGIS** mapped to port `5433`.
+   - **Mosquitto MQTT Broker** mapped to port `1884` (for local hardware testing).
 2. Create and activate a Python virtual environment:
    ```bash
    python3 -m venv .venv

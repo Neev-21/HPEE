@@ -45,7 +45,7 @@ if __name__ == "__main__":
     parser.add_argument("--file", default="datasets/TS-PS9-2.csv", help="Path to TS-PS9-2 dataset")
     parser.add_argument("--mode", default="normal", choices=["normal", "industrial_surge"], help="Scenario to replay")
     parser.add_argument("--node", default="HPEE-ANK-001", help="Target Node ID")
-    parser.add_argument("--url", default="http://localhost:8000", help="API Base URL")
+    parser.add_argument("--url", default="http://localhost:8100", help="API Base URL")
     
     args = parser.parse_args()
     

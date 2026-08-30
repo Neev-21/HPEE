@@ -67,6 +67,90 @@ export default function OverviewPage() {
     load().catch(() => { /* backend offline */ });
   }, [tCommon]);
 
+  // WebSocket Live Connection
+  useEffect(() => {
+    // If running dev server on 3100 and backend on 8100, Next.js must proxy this route
+    const protocol = window.location.protocol === 'https:' ? 'wss:' : 'ws:';
+    const wsUrl = `${protocol}//${window.location.host}/api/v1/ws/live?token=hpee-live-token`;
+    
+    let ws: WebSocket;
+    let reconnectTimer: NodeJS.Timeout;
+
+    const connectWS = () => {
+      ws = new WebSocket(wsUrl);
+
+      ws.onopen = () => {
+        console.log('WebSocket connected to', wsUrl);
+      };
+
+      ws.onmessage = (event) => {
+        try {
+          const data = JSON.parse(event.data);
+          
+          if (data.type === 'TELEMETRY_UPDATE') {
+            setNodes((prevNodes) => {
+              if (!prevNodes) return prevNodes;
+              return {
+                ...prevNodes,
+                features: prevNodes.features.map((f) => {
+                  if (f.properties.node_id === data.node_id) {
+                    return {
+                      ...f,
+                      properties: {
+                        ...f.properties,
+                        pm25: data.pm25 !== null ? data.pm25 : f.properties.pm25,
+                        so2: data.so2 !== null ? data.so2 : f.properties.so2,
+                      }
+                    };
+                  }
+                  return f;
+                })
+              };
+            });
+          } else if (data.type === 'POLLUTION_ALERT') {
+            setActiveEvent((prev) => {
+              // Fetch latest GIS layers for the new or updated event
+              fetchEventGisLayers(data.event_id)
+                .then((layers) => {
+                  if (layers.layers.plume_cone) setPlumeCone(layers.layers.plume_cone as GeoJSONFeature);
+                  if (layers.layers.wind_vector) setWindVector(layers.layers.wind_vector as GeoJSONFeature);
+                })
+                .catch(console.error);
+
+              return {
+                event_id: data.event_id,
+                status: 'active',
+                severity: data.severity,
+                village_name: data.village_name,
+                peak_pm25: data.peak_pm25,
+                peak_so2: data.peak_so2,
+                detected_at: data.started_at || new Date().toISOString(),
+                // Fill other required properties if necessary
+              } as PollutionEvent;
+            });
+          }
+        } catch (err) {
+          console.error('Error parsing WS message:', err);
+        }
+      };
+
+      ws.onclose = () => {
+        console.log('WebSocket closed. Reconnecting in 5s...');
+        reconnectTimer = setTimeout(connectWS, 5000);
+      };
+    };
+
+    connectWS();
+
+    return () => {
+      clearTimeout(reconnectTimer);
+      if (ws) {
+        ws.onclose = null; // Prevent reconnect on unmount
+        ws.close();
+      }
+    };
+  }, []);
+
   return (
     <div className="flex flex-col md:flex-row h-[calc(100vh-118px)] w-full">
       {/* ---- LEFT: GIS Map ---- */}

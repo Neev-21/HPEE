@@ -75,7 +75,7 @@ The frontend interface comprises 5 core functional views:
 
 ## 🔗 3. Backend API Route Mapping (FastAPI Integration)
 
-The frontend connects directly to our verified, live backend services (`http://127.0.0.1:8000`):
+The frontend connects directly to our verified, live backend services (`http://127.0.0.1:8100`):
 
 | UI Component | Backend API Endpoint | HTTP Method | Data Payload / Output |
 |---|---|---|---|
@@ -109,6 +109,6 @@ The frontend connects directly to our verified, live backend services (`http://1
 ## 🚀 5. Next Steps for Tomorrow's Session
 
 1. **Scaffold Next.js / Vite React App** with Tailwind CSS (`rounded-none` configuration, zinc/slate monochrome tokens).
-2. **Mount Leaflet / Mapbox GIS View** connecting to `http://127.0.0.1:8000/api/v1/gis/`.
+2. **Mount Leaflet / Mapbox GIS View** connecting to `http://127.0.0.1:8100/api/v1/gis/`.
 3. **Integrate Real-Time Telemetry & PDF Download** from the running backend.
 4. **Deploy production bundle to Vercel** syncing with the backend container.

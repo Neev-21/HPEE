@@ -7,7 +7,7 @@ set -e
 DB_USER="${POSTGRES_USER:-hpee_admin}"
 DB_PASS="${POSTGRES_PASSWORD:-hpee_dev_password}"
 DB_HOST="${POSTGRES_SERVER:-localhost}"
-DB_PORT="${POSTGRES_PORT:-5432}"
+DB_PORT="${POSTGRES_PORT:-5433}"
 DB_NAME="${POSTGRES_DB:-hpee}"
 
 echo "=================================================="
