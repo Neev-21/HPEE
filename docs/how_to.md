@@ -22,7 +22,7 @@ The project uses a Docker container for PostgreSQL 17 + PostGIS 3.5.
 1. Open a terminal in the root of the `HPEE` workspace.
 2. Spin up the database and message broker using Docker Compose:
    ```bash
-   docker-compose up -d postgres mosquitto
+   docker-compose up -d 
    ```
    *(This starts PostGIS mapped to port 5433 and the Mosquitto MQTT broker mapped to port 1884).*
 
