@@ -28,10 +28,11 @@ hpee/
 │       │   ├── sensor.py
 │       │   ├── pollution_event.py
 │       │   ├── industry.py
-│       │   ├── evidence.py
+│       │   ├── ops.py
 │       │   ├── complaint.py
-│       │   └── ops.py
-│       └── schemas/            # Pydantic schemas
+│       │   └── evidence.py
+│       ├── schemas/            # Pydantic schemas for API validation
+│       └── main.py             # FastAPI entrypoint (Future)
 ├── database/
 │   ├── seed/                   # Deterministic seed data generator
 │   │   ├── gujarat_corridor_data.py
@@ -131,3 +132,76 @@ To completely reset the database, re-run all migrations, load seed data, and exe
 ```bash
 ./database/scripts/reset_db.sh
 ```
+
+---
+
+## 4. Setup & Installation
+
+### Option 1: Docker (Recommended)
+1. Run `docker-compose up -d`. This spins up:
+   - **PostgreSQL + PostGIS** on port `5432`.
+   - **Mosquitto MQTT Broker** on port `1883` (for local hardware testing).
+2. Create and activate a Python virtual environment:
+   ```bash
+   python3 -m venv .venv
+   source .venv/bin/activate
+   pip install -r requirements.txt
+   ```
+
+### Generating Fake Data (Simulator)
+
+You can run the full engine pipeline simulation (Baseline -> Event Detection -> Source Attribution -> Evidence Fusion):
+```bash
+python scripts/compute_baseline.py
+python simulator/run.py
+```
+
+### Hardware Testing (Serial-to-MQTT Bridge)
+
+For testing hardware without Wi-Fi (e.g., standard Arduino boards):
+1. Flash `hardware_tests/serial_node/serial_node.ino` to your board.
+2. Ensure the Mosquitto broker is running via `docker-compose up -d mosquitto`.
+3. Run the python bridge (make sure `pyserial` and `paho-mqtt` are installed from `requirements.txt`):
+```bash
+python hardware_tests/mqtt_bridge.py --port COM3
+```
+
+---
+
+## 5. Development Guidelines
+
+- **Code Style**: Follow the [PEP 8](https://pep8.org/) style guide.
+- **Documentation**: Use docstrings and comments to explain complex logic.
+- **Testing**: Write unit tests for all functions and classes.
+- **Performance**: Optimize queries and algorithms for efficiency.
+- **Security**: Validate all inputs and use secure coding practices.
+
+---
+
+## 6. Future Directions
+
+- **Real-time Processing**: Stream data directly into ML models for real-time pollution monitoring.
+- **Edge Computing**: Deploy ML models on edge devices for local processing.
+- **Integration with IoT Platforms**: Connect with platforms like AWS IoT, Google Cloud IoT, and Azure IoT.
+- **User Interface**: Develop a web or mobile interface for real-time monitoring and complaint filing.
+
+---
+
+## 7. Credits
+
+- **Team**: Fifty Shades of Cache
+- **Database**: PostgreSQL 17 + PostGIS 3.5
+- **ORM**: SQLAlchem
+- **Migrations**: Alembic
+
+---
+
+## 8. License
+
+This project is licensed under the MIT License. See the [LICENSE](LICENSE) file for details.
+
+---
+
+## 9. Contact
+
+For support or feedback, please contact us at: support@hpee.org
