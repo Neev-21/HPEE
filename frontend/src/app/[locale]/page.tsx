@@ -53,9 +53,15 @@ export default function OverviewPage() {
         if (active) {
           try {
             const layers = await fetchEventGisLayers(active.event_id);
-            if (layers.layers.plume_cone) setPlumeCone(layers.layers.plume_cone as GeoJSONFeature);
-            if (layers.layers.wind_vector) setWindVector(layers.layers.wind_vector as GeoJSONFeature);
-          } catch { /* plume layers optional */ }
+            setPlumeCone((layers.layers.plume_cone as GeoJSONFeature) || null);
+            setWindVector((layers.layers.wind_vector as GeoJSONFeature) || null);
+          } catch {
+            setPlumeCone(null);
+            setWindVector(null);
+          }
+        } else {
+          setPlumeCone(null);
+          setWindVector(null);
         }
       } catch (e) {
         setError(tCommon('error'));
@@ -64,7 +70,15 @@ export default function OverviewPage() {
         setLoading(false);
       }
     }
+
     load().catch(() => { /* backend offline */ });
+
+    // Live sync for external mobile presenter remote
+    const interval = setInterval(() => {
+      load().catch(() => {});
+    }, 2000);
+
+    return () => clearInterval(interval);
   }, [tCommon]);
 
   return (
