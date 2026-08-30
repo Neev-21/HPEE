@@ -36,6 +36,13 @@ export default function GisMap({
     // Dynamic import Leaflet (client only)
     import('leaflet').then((L) => {
       if (!mapRef.current) return;
+      // Prevent double init in React Strict Mode
+      // @ts-expect-error leaflet internal id
+      if (mapRef.current._leaflet_id) {
+        if (mapInstanceRef.current) return;
+        // @ts-expect-error leaflet internal id
+        mapRef.current._leaflet_id = null;
+      }
       const map = L.map(mapRef.current, { zoomControl: true }).setView([21.62, 73.02], 12);
       
       // Use CartoDB light_all for instant loading (no strict API key required for dev)
