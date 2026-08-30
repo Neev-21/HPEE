@@ -77,6 +77,7 @@ def trigger_event_detection(reading_id: int, node_id: str):
         # -----------------------------------------------------------------------
         # 3. Classification Engine (XGBoost → fallback rules)
         # -----------------------------------------------------------------------
+        from backend.app.engines.common.types import ClassificationInput
         raw  = reading.raw_payload or {}
         meas = raw.get("measurements", {})
 
@@ -86,9 +87,11 @@ def trigger_event_detection(reading_id: int, node_id: str):
         co_val   = meas.get("co",   {}).get("value") if isinstance(meas.get("co"),   dict) else None
 
         ts = reading.recorded_at
-        classify_event(
-            db=db,
+        
+        classification_input = ClassificationInput(
             event_id=str(event_id),
+            node_id=node_id,
+            timestamp=ts,
             peak_pm25=event.peak_pm25,
             peak_pm10=pm10_val,
             peak_so2=event.peak_so2,
@@ -103,6 +106,8 @@ def trigger_event_detection(reading_id: int, node_id: str):
             day_of_week=ts.weekday(),
             is_weekend=(ts.weekday() >= 5),
         )
+        
+        classify_event(db=db, input_data=classification_input)
 
         # -----------------------------------------------------------------------
         # 4. Weather Intelligence Engine (Data-B) — fetch real wind direction

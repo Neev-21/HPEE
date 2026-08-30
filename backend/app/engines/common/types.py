@@ -27,3 +27,28 @@ class EvidenceFactor(BaseModel):
     score: float
     description: str
     payload: dict
+
+class ClassificationInput(BaseModel):
+    event_id: str
+    node_id: str
+    timestamp: datetime
+    peak_pm25: Optional[float] = None
+    peak_pm10: Optional[float] = None
+    peak_so2: Optional[float] = None
+    peak_nox: Optional[float] = None
+    peak_co: Optional[float] = None
+    hour_of_day: int
+    
+    # Extended features for XGBoost model
+    peak_no2: Optional[float] = None
+    wind_speed: Optional[float] = None
+    temperature: Optional[float] = None
+    humidity: Optional[float] = None
+    month: Optional[int] = 1
+    day_of_week: Optional[int] = 0
+    is_weekend: Optional[bool] = False
+
+class ClassificationOutput(BaseModel):
+    classification_type: str
+    confidence_score: float
+    features_used: dict

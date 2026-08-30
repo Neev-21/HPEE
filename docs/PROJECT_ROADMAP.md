@@ -48,14 +48,15 @@ This document serves as the single source of truth for the phased development an
 - [ ] **Anemometer & Wind Vane Integration** (Wind speed & cardinal direction drivers)
 - [ ] **Power Management System** (Solar + LiFePO4 battery monitoring & telemetry)
 - [x] **MQTT Ingestion Broker** (Local Mosquitto container added with a Serial-to-MQTT testing bridge)
-- [ ] **MQTT Consumer** (Async backend consumer)
+- [x] **MQTT Consumer** (Background ingestion worker implemented and containerized)
 - [ ] **Field Deployment Guide** (Mounting, geolocation calibration, village association)
 
 ---
 
 ## 🚀 Phase 6 — Productionization & Ops
-*Status: Scheduled*
-- [ ] **Container Orchestration** (Multi-container `docker-compose` for API, DB, MQTT, Frontend, Redis)
+*Status: In Progress*
+- [x] **Container Orchestration Core** (Multi-container `docker-compose` for API, DB, MQTT, and Ingestion Worker)
+- [ ] **Container Orchestration Frontend** (Add Next.js & Redis to Docker)
 - [ ] **Cloud Deployment & CI/CD** (Automated testing, container registry, staging/production environments)
 - [ ] **Security Hardening** (TLS everywhere, node HMAC / token authentication, rate limiting)
 - [ ] **Monitoring & Telemetry** (Prometheus, Grafana, OpenTelemetry)

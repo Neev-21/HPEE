@@ -120,24 +120,12 @@ def _classify_rules(
 # ---------------------------------------------------------------------------
 # Public entrypoint
 # ---------------------------------------------------------------------------
+from backend.app.engines.common.types import ClassificationInput, ClassificationOutput
+
 def classify_event(
     db: Session,
-    event_id: str,
-    peak_pm25: float,
-    peak_pm10: float,
-    peak_so2: float,
-    peak_nox: float,
-    peak_co: float,
-    hour_of_day: int,
-    # Extended params (optional for backward compat)
-    peak_no2: Optional[float] = None,
-    wind_speed: Optional[float] = None,
-    temperature: Optional[float] = None,
-    humidity: Optional[float] = None,
-    month: int = 1,
-    day_of_week: int = 0,
-    is_weekend: bool = False,
-) -> None:
+    input_data: ClassificationInput
+) -> ClassificationOutput:
     """
     Classifies a pollution event and persists the result.
 
@@ -145,43 +133,52 @@ def classify_event(
     """
     _try_load_model()
 
-    pm_ratio      = calculate_pm_ratio(peak_pm25, peak_pm10)
-    nox_so2_ratio = calculate_nox_so2_ratio(peak_nox, peak_so2)
+    pm_ratio      = calculate_pm_ratio(input_data.peak_pm25, input_data.peak_pm10)
+    nox_so2_ratio = calculate_nox_so2_ratio(input_data.peak_nox, input_data.peak_so2)
 
     if _model is not None and _encoder is not None:
         # XGBoost path
         feature_vector = extract_feature_vector(
-            pm25=peak_pm25, pm10=peak_pm10, so2=peak_so2,
-            nox=peak_nox, no2=peak_no2, co=peak_co,
-            wind_speed=wind_speed, temperature=temperature, humidity=humidity,
-            hour_of_day=hour_of_day, month=month,
-            day_of_week=day_of_week, is_weekend=is_weekend,
+            pm25=input_data.peak_pm25, pm10=input_data.peak_pm10, so2=input_data.peak_so2,
+            nox=input_data.peak_nox, no2=input_data.peak_no2, co=input_data.peak_co,
+            wind_speed=input_data.wind_speed, temperature=input_data.temperature, humidity=input_data.humidity,
+            hour_of_day=input_data.hour_of_day, month=input_data.month,
+            day_of_week=input_data.day_of_week, is_weekend=input_data.is_weekend,
         )
         classification_type, confidence_score, model_version = _classify_xgboost(feature_vector)
     else:
         # Rule-based fallback
         classification_type, confidence_score, model_version = _classify_rules(
             pm_ratio=pm_ratio, nox_so2_ratio=nox_so2_ratio,
-            peak_so2=peak_so2, peak_co=peak_co,
-            wind_speed=wind_speed, hour_of_day=hour_of_day,
+            peak_so2=input_data.peak_so2, peak_co=input_data.peak_co,
+            wind_speed=input_data.wind_speed, hour_of_day=input_data.hour_of_day,
         )
 
+    features_used = {
+        "pm25_pm10_ratio":    pm_ratio,
+        "nox_so2_ratio":      nox_so2_ratio,
+        "hour_of_day":        input_data.hour_of_day,
+        "month":              input_data.month,
+        "wind_speed":         input_data.wind_speed,
+        "peak_so2":           input_data.peak_so2,
+        "peak_nox":           input_data.peak_nox,
+        "peak_co":            input_data.peak_co,
+        "diurnal_context":    "daytime" if 6 <= input_data.hour_of_day <= 18 else "nighttime",
+    }
+
     classification = EventClassification(
-        event_id=event_id,
+        event_id=input_data.event_id,
         classification_type=classification_type,
         confidence_score=confidence_score,
         model_version=model_version,
-        features_used={
-            "pm25_pm10_ratio":    pm_ratio,
-            "nox_so2_ratio":      nox_so2_ratio,
-            "hour_of_day":        hour_of_day,
-            "month":              month,
-            "wind_speed":         wind_speed,
-            "peak_so2":           peak_so2,
-            "peak_nox":           peak_nox,
-            "peak_co":            peak_co,
-            "diurnal_context":    "daytime" if 6 <= hour_of_day <= 18 else "nighttime",
-        },
+        features_used=features_used,
     )
     db.add(classification)
     db.commit()
+
+    return ClassificationOutput(
+        classification_type=classification_type,
+        confidence_score=confidence_score,
+        features_used=features_used,
+    )
+

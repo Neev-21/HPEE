@@ -1,7 +1,11 @@
 import pytest
 from sqlalchemy import create_engine
 from sqlalchemy.orm import sessionmaker, Session
+from fastapi.testclient import TestClient
+
 from backend.app.models import Base
+from backend.app.main import app
+from backend.app.db.session import get_db
 
 # In-memory / Test Engine
 TEST_DATABASE_URL = "sqlite:///:memory:"
@@ -24,3 +28,13 @@ def db_session(engine):
     session.close()
     transaction.rollback()
     connection.close()
+
+@pytest.fixture(scope="function")
+def client(db_session):
+    def override_get_db():
+        yield db_session
+
+    app.dependency_overrides[get_db] = override_get_db
+    with TestClient(app) as test_client:
+        yield test_client
+    app.dependency_overrides.clear()

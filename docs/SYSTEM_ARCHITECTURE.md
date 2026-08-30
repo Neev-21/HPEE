@@ -9,14 +9,15 @@
 ```mermaid
 graph TD
     subgraph Edge Layer
-        Node1["ESP32 Node (Ankleshwar)"] -->|MQTT / TLS| Broker["MQTT Broker / HTTP Gateway"]
+        Node1["ESP32 Node (Ankleshwar)"] -->|MQTT / TLS| Broker["MQTT Broker (Mosquitto)"]
         Node2["ESP32 Node (Piraman)"] -->|MQTT / TLS| Broker
         Node3["ESP32 Node (Panoli)"] -->|MQTT / TLS| Broker
         IMD["IMD / Weather Stations"] -->|REST API| WeatherIngest["Weather Ingest Worker"]
     end
 
     subgraph Ingestion & Backend Layer
-        Broker --> IngestAPI["FastAPI Telemetry Ingest"]
+        Broker --> MQTTWorker["MQTT Ingestion Worker (Python)"]
+        MQTTWorker -->|Transforms & POSTs| IngestAPI["FastAPI Telemetry Ingest"]
         WeatherIngest --> IngestAPI
         IngestAPI -->|Raw SQL Write| RawDB[(PostgreSQL + PostGIS: sensor_readings)]
     end
