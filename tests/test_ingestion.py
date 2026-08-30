@@ -61,6 +61,56 @@ def test_ingest_telemetry_validation_error():
     response = client.post("/api/v1/sensor/readings", json=payload)
     assert response.status_code == 422
 
+
+def test_ingest_rich_telemetry_payload():
+    payload = {
+        "node_id": "HPEE-TEST-RICH-001",
+        "timestamp": "2026-08-15T16:12:00Z",
+        "location": {
+            "latitude": 21.6335,
+            "longitude": 73.0162,
+            "altitude": 45.0
+        },
+        "measurements": {
+            "pm25": {"value": 76.2, "unit": "ug/m3", "quality": "valid"},
+            "pm10": {"value": 118.4, "unit": "ug/m3", "quality": "valid"},
+            "so2": {"value": 52.1, "unit": "ug/m3", "quality": "valid"},
+            "nox": {"value": 81.9, "unit": "ug/m3", "quality": "valid"},
+            "no2": {"value": 34.7, "unit": "ug/m3", "quality": "valid"},
+            "co": {"value": 2.1, "unit": "ppm", "quality": "valid"},
+            "co2": {"value": 612.5, "unit": "ppm", "quality": "valid"},
+            "temperature": {"value": 30.2, "unit": "celsius", "quality": "valid"},
+            "humidity": {"value": 68.1, "unit": "percent", "quality": "valid"},
+            "wind_speed": {"value": 5.4, "unit": "m/s", "quality": "valid"},
+            "wind_direction": {"value": 142.0, "unit": "degrees", "cardinal": "SE", "quality": "valid"}
+        },
+        "node_health": {
+            "battery_percent": 83.0,
+            "signal_strength": -55,
+            "status": "online"
+        }
+    }
+
+    response = client.post("/api/v1/sensor/readings", json=payload)
+    assert response.status_code == 201
+    body = response.json()
+    assert body["status"] == "success"
+    assert body["node_id"] == "HPEE-TEST-RICH-001"
+
+    from backend.app.db.session import SessionLocal
+    from backend.app.models.sensor import SensorReading
+
+    db = SessionLocal()
+    try:
+        reading = db.query(SensorReading).filter(SensorReading.node_id == "HPEE-TEST-RICH-001").order_by(SensorReading.reading_id.desc()).first()
+        assert reading is not None
+        assert reading.pm10 == 118.4
+        assert reading.nox == 81.9
+        assert reading.co2 == 612.5
+    finally:
+        db.close()
+
+
 def test_trigger_event_detection_routing():
     """
     Integration test to ensure trigger_event_detection routes correctly through the classification engine.

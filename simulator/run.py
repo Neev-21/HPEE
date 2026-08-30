@@ -17,14 +17,28 @@ def run_simulator(file_path: str, mode: str, node_id: str, api_url: str):
         body = {
             "node_id": node_id,
             "timestamp": payload["timestamp"],
+            "location": {
+                "latitude": 21.6335,
+                "longitude": 73.0162,
+                "altitude": 42.5,
+            },
             "node_health": {
                 "battery_percent": 95,
                 "signal_strength": -65,
                 "status": "active"
             },
             "measurements": {
-                "pm25": {"value": payload["pm25"], "unit": "ug/m3"} if payload["pm25"] is not None else None,
-                "so2": {"value": payload["so2"], "unit": "ppb"} if payload["so2"] is not None else None
+                "pm25": {"value": payload.get("pm25"), "unit": "ug/m3", "quality": "valid"} if payload.get("pm25") is not None else None,
+                "pm10": {"value": payload.get("pm10"), "unit": "ug/m3", "quality": "valid"} if payload.get("pm10") is not None else None,
+                "so2": {"value": payload.get("so2"), "unit": "ug/m3", "quality": "valid"} if payload.get("so2") is not None else None,
+                "nox": {"value": payload.get("nox"), "unit": "ug/m3", "quality": "valid"} if payload.get("nox") is not None else None,
+                "no2": {"value": payload.get("no2"), "unit": "ug/m3", "quality": "valid"} if payload.get("no2") is not None else None,
+                "co": {"value": payload.get("co"), "unit": "ppm", "quality": "valid"} if payload.get("co") is not None else None,
+                "co2": {"value": payload.get("co2"), "unit": "ppm", "quality": "valid"} if payload.get("co2") is not None else None,
+                "temperature": {"value": 30.2, "unit": "celsius", "quality": "valid"},
+                "humidity": {"value": 68.4, "unit": "percent", "quality": "valid"},
+                "wind_speed": {"value": 4.5, "unit": "m/s", "quality": "valid"},
+                "wind_direction": {"value": 145.0, "unit": "degrees", "cardinal": "SE", "quality": "valid"},
             },
             "status": "active"
         }

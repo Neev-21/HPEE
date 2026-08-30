@@ -193,6 +193,11 @@ class SensorReading(Base):
         nullable=True,
         doc="PM2.5 concentration in ug/m3"
     )
+    pm10: Mapped[Optional[float]] = mapped_column(
+        Float,
+        nullable=True,
+        doc="PM10 concentration in ug/m3"
+    )
     pm25_quality: Mapped[str] = mapped_column(
         String(32),
         default="valid",
@@ -211,6 +216,26 @@ class SensorReading(Base):
         server_default=text("'valid'"),
         nullable=False,
         doc="Quality flag: valid, estimated, suspect, invalid"
+    )
+    nox: Mapped[Optional[float]] = mapped_column(
+        Float,
+        nullable=True,
+        doc="NOx concentration in ug/m3"
+    )
+    no2: Mapped[Optional[float]] = mapped_column(
+        Float,
+        nullable=True,
+        doc="NO2 concentration in ug/m3"
+    )
+    co: Mapped[Optional[float]] = mapped_column(
+        Float,
+        nullable=True,
+        doc="CO concentration in ppm"
+    )
+    co2: Mapped[Optional[float]] = mapped_column(
+        Float,
+        nullable=True,
+        doc="CO2 concentration in ppm"
     )
     temperature: Mapped[Optional[float]] = mapped_column(
         Float,

@@ -23,6 +23,35 @@ const SEVERITY_COLORS: Record<string, string> = {
 };
 
 const CPCB_LIMITS = { pm25: 60, so2: 80 };
+const ANKLESHWAR_BOUNDS = {
+  centerLat: 21.62,
+  centerLon: 73.02,
+  radiusKm: 18,
+};
+
+function filterNearbyGeoJSON(
+  collection: GeoJSONFeatureCollection | null,
+  centerLat: number,
+  centerLon: number,
+  radiusKm: number,
+): GeoJSONFeatureCollection | null {
+  if (!collection) return null;
+
+  const filteredFeatures = collection.features.filter((feature) => {
+    const coords = feature.geometry.coordinates as number[];
+    const lon = coords[0];
+    const lat = coords[1];
+    const dx = (lon - centerLon) * 111.32;
+    const dy = (lat - centerLat) * 111.32;
+    const distanceKm = Math.sqrt(dx * dx + dy * dy);
+    return distanceKm <= radiusKm;
+  });
+
+  return {
+    type: 'FeatureCollection',
+    features: filteredFeatures,
+  };
+}
 
 export default function OverviewPage() {
   const t = useTranslations('Overview');
@@ -44,8 +73,23 @@ export default function OverviewPage() {
           fetchIndustriesGeoJSON(),
           fetchPollutionEvents(),
         ]);
-        setNodes(nodesData);
-        setIndustries(industriesData);
+
+        // Keep the map fast and focused on the active local Ankleshwar cluster.
+        const filteredNodes = filterNearbyGeoJSON(
+          nodesData,
+          ANKLESHWAR_BOUNDS.centerLat,
+          ANKLESHWAR_BOUNDS.centerLon,
+          ANKLESHWAR_BOUNDS.radiusKm,
+        );
+        const filteredIndustries = filterNearbyGeoJSON(
+          industriesData,
+          ANKLESHWAR_BOUNDS.centerLat,
+          ANKLESHWAR_BOUNDS.centerLon,
+          ANKLESHWAR_BOUNDS.radiusKm,
+        );
+
+        setNodes(filteredNodes);
+        setIndustries(filteredIndustries);
 
         const active = events.find((e) => e.status === 'active') || events[0] || null;
         setActiveEvent(active);
@@ -99,7 +143,12 @@ export default function OverviewPage() {
                       properties: {
                         ...f.properties,
                         pm25: data.pm25 !== null ? data.pm25 : f.properties.pm25,
+                        pm10: data.pm10 !== null ? data.pm10 : f.properties.pm10,
                         so2: data.so2 !== null ? data.so2 : f.properties.so2,
+                        nox: data.nox !== null ? data.nox : f.properties.nox,
+                        no2: data.no2 !== null ? data.no2 : f.properties.no2,
+                        co: data.co !== null ? data.co : f.properties.co,
+                        co2: data.co2 !== null ? data.co2 : f.properties.co2,
                       }
                     };
                   }
@@ -241,11 +290,46 @@ export default function OverviewPage() {
                 sub: `CPCB 24h Limit: ${CPCB_LIMITS.pm25}`,
               },
               {
+                label: 'PM10 Respirable Dust',
+                value: activeEvent?.peak_pm10 ?? null,
+                unit: 'µg/m³',
+                limit: 100,
+                sub: 'CPCB 24h Benchmark: 100',
+              },
+              {
                 label: 'SO2 Toxic Gas',
                 value: activeEvent?.peak_so2,
-                unit: 'ppb',
+                unit: 'µg/m³',
                 limit: CPCB_LIMITS.so2,
                 sub: `CPCB Limit: ${CPCB_LIMITS.so2}`,
+              },
+              {
+                label: 'NOx Oxides',
+                value: activeEvent?.peak_nox ?? null,
+                unit: 'µg/m³',
+                limit: 80,
+                sub: 'NOx Trigger Band: 80',
+              },
+              {
+                label: 'NO2 Nitrogen Dioxide',
+                value: activeEvent?.peak_no2 ?? null,
+                unit: 'µg/m³',
+                limit: 80,
+                sub: 'NO2 Benchmark: 80',
+              },
+              {
+                label: 'CO Carbon Monoxide',
+                value: activeEvent?.peak_co ?? null,
+                unit: 'ppm',
+                limit: 2,
+                sub: 'Short-term threshold: 2',
+              },
+              {
+                label: 'CO₂ Ambient Level',
+                value: activeEvent?.peak_co2 ?? null,
+                unit: 'ppm',
+                limit: 500,
+                sub: 'Baseline reference: 500',
               },
             ].map((metric) => {
               const isCritical = metric.value != null && metric.value > metric.limit;

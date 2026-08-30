@@ -252,10 +252,15 @@ def ingest_telemetry(payload: TelemetryIngestRequest, background_tasks: Backgrou
     m = payload.measurements
     pm25_val = m.pm25.value if m.pm25 else None
     pm25_qual = m.pm25.quality if m.pm25 else "valid"
-    
+
+    pm10_val = m.pm10.value if m.pm10 else None
     so2_val = m.so2.value if m.so2 else None
     so2_qual = m.so2.quality if m.so2 else "valid"
-    
+    nox_val = m.nox.value if m.nox else None
+    no2_val = m.no2.value if m.no2 else None
+    co_val = m.co.value if m.co else None
+    co2_val = m.co2.value if m.co2 else None
+
     temp_val = m.temperature.value if m.temperature else None
     hum_val = m.humidity.value if m.humidity else None
     ws_val = m.wind_speed.value if m.wind_speed else None
@@ -274,9 +279,14 @@ def ingest_telemetry(payload: TelemetryIngestRequest, background_tasks: Backgrou
         received_at=received_time,
         location=wkt_location,
         pm25=pm25_val,
+        pm10=pm10_val,
         pm25_quality=pm25_qual,
         so2=so2_val,
         so2_quality=so2_qual,
+        nox=nox_val,
+        no2=no2_val,
+        co=co_val,
+        co2=co2_val,
         temperature=temp_val,
         humidity=hum_val,
         wind_speed=ws_val,
@@ -297,7 +307,16 @@ def ingest_telemetry(payload: TelemetryIngestRequest, background_tasks: Backgrou
         "type": "TELEMETRY_UPDATE",
         "node_id": reading.node_id,
         "pm25": pm25_val,
+        "pm10": pm10_val,
         "so2": so2_val,
+        "nox": nox_val,
+        "no2": no2_val,
+        "co": co_val,
+        "co2": co2_val,
+        "temperature": temp_val,
+        "humidity": hum_val,
+        "wind_speed": ws_val,
+        "wind_direction": wd_val,
         "timestamp": reading.recorded_at.isoformat() if reading.recorded_at else None
     })
 

@@ -45,10 +45,11 @@ export default function GisMap({
       }
       const map = L.map(mapRef.current, { zoomControl: true }).setView([21.62, 73.02], 12);
       
-      // Use CartoDB light_all for instant loading (no strict API key required for dev)
-      L.tileLayer('https://{s}.basemaps.cartocdn.com/light_all/{z}/{x}/{y}{r}.png', {
-        maxZoom: 19,
-        attribution: '&copy; OpenStreetMap contributors &copy; CARTO',
+      // Use the provided CARTO raster basemap key so the watermark is removed.
+      L.tileLayer('https://{s}.basemaps.cartocdn.com/rastertiles/voyager/{z}/{x}/{y}.png?key=cb1_2lfg_1_7e94faf556c86dd2e04298a7', {
+        maxZoom: 20,
+        subdomains: 'abcd',
+        attribution: '&copy; <a href="https://www.openstreetmap.org/copyright">OpenStreetMap</a>, &copy; <a href="https://carto.com/attributions">CARTO</a>',
       }).addTo(map);
       
       mapInstanceRef.current = map;
@@ -99,11 +100,14 @@ export default function GisMap({
             fillOpacity: 0.9,
           });
           marker.bindPopup(`
-            <div style="font-family:sans-serif;font-size:12px;min-width:160px">
+            <div style="font-family:sans-serif;font-size:12px;min-width:190px">
               <strong style="font-size:13px">${p.name || p.node_id}</strong><br/>
               <span style="color:#6b7280;font-size:10px">NODE ID: ${p.node_id}</span><br/><br/>
               PM2.5: <strong>${p.pm25 ?? '—'} µg/m³</strong><br/>
+              PM10: <strong>${p.pm10 ?? '—'} µg/m³</strong><br/>
               SO2: <strong>${p.so2 ?? '—'} ppb</strong><br/>
+              NOx: <strong>${p.nox ?? '—'} µg/m³</strong><br/>
+              CO₂: <strong>${p.co2 ?? '—'} ppm</strong><br/>
               AQI Status: <strong>${p.aqi ?? '—'}</strong><br/>
               Battery: ${p.battery_percent ?? '—'}%
             </div>
