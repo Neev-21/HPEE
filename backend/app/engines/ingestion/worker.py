@@ -21,6 +21,7 @@ UNIT_MAP = {
     "pm25": "ug/m3",
     "pm10": "ug/m3",
     "so2": "ug/m3",
+    "smoke": "ppm",
     "temperature": "celsius",
     "humidity": "percent",
     "wind_speed": "m/s",

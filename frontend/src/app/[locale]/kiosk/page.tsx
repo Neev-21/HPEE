@@ -14,6 +14,7 @@ export default function KioskPage() {
   // Live real-time telemetry metrics
   const [liveMetrics, setLiveMetrics] = useState({
     pm25: 84.6,
+    smoke: 42.7,
     so2: 42.7,
     temperature: 29.4,
     humidity: 71,
@@ -73,6 +74,20 @@ export default function KioskPage() {
             activeNodeId: data.node_id || prev.activeNodeId,
             onlineCount: data.online_nodes || prev.onlineCount,
           }));
+          setLiveMetrics((prev) => {
+            const smokeVal = data.smoke != null ? Number(data.smoke) : (data.so2 != null ? Number(data.so2) : prev.smoke);
+            return {
+              ...prev,
+              pm25: data.pm25 != null ? Number(data.pm25) : prev.pm25,
+              smoke: smokeVal,
+              so2: data.so2 != null ? Number(data.so2) : prev.so2,
+              temperature: data.temperature != null ? Number(data.temperature) : prev.temperature,
+              humidity: data.humidity != null ? Number(data.humidity) : prev.humidity,
+              windSpeed: data.wind_speed != null ? Number(data.wind_speed) : prev.windSpeed,
+              activeNodeId: data.node_id || prev.activeNodeId,
+              onlineCount: data.online_nodes || prev.onlineCount,
+            };
+          });
         }
       } catch (err) {
         // Fallback silently if API is warming up
@@ -94,6 +109,19 @@ export default function KioskPage() {
           windSpeed: msg.wind_speed != null ? Number(msg.wind_speed) : prev.windSpeed,
           activeNodeId: msg.node_id || prev.activeNodeId,
         }));
+        setLiveMetrics((prev) => {
+          const smokeVal = msg.smoke != null ? Number(msg.smoke) : (msg.so2 != null ? Number(msg.so2) : prev.smoke);
+          return {
+            ...prev,
+            pm25: msg.pm25 != null ? Number(msg.pm25) : prev.pm25,
+            smoke: smokeVal,
+            so2: msg.so2 != null ? Number(msg.so2) : prev.so2,
+            temperature: msg.temperature != null ? Number(msg.temperature) : prev.temperature,
+            humidity: msg.humidity != null ? Number(msg.humidity) : prev.humidity,
+            windSpeed: msg.wind_speed != null ? Number(msg.wind_speed) : prev.windSpeed,
+            activeNodeId: msg.node_id || prev.activeNodeId,
+          };
+        });
       } else if (msg.type === 'POLLUTION_ALERT') {
         const culprit = msg.primary_culprit ? ` • Attributed: ${msg.primary_culprit.name} (${(msg.primary_culprit.probability_score * 100).toFixed(0)}%)` : '';
         setAlertMessage(`⚠ ACTIVE ENVIRONMENTAL SURGE: ${msg.severity.toUpperCase()} anomaly at ${msg.village_name}${culprit}`);
@@ -116,6 +144,7 @@ export default function KioskPage() {
 
     const pm25 = liveMetrics.pm25;
     const so2 = liveMetrics.so2;
+    const smoke = liveMetrics.smoke ?? liveMetrics.so2;
     const temp = liveMetrics.temperature;
     const hum = liveMetrics.humidity;
     const wind = liveMetrics.windSpeed;
@@ -193,6 +222,9 @@ export default function KioskPage() {
             <span class="lbl">SO₂ TOXIC GAS</span>
             <span class="val" id="kiosk-so2" style="color:#fbbf24;">${Number(so2).toFixed(1)}</span>
             <span class="unit">ppb • CPCB Benchmark: 80</span>
+            <span class="lbl">SMOKE SENSOR READING</span>
+            <span class="val" id="kiosk-smoke" style="color:#fbbf24;">${Number(smoke).toFixed(1)}</span>
+            <span class="unit">ppm • MQ-2 Gas & Smoke Detection</span>
           </div>
           <div class="card">
             <span class="lbl">AMBIENT TEMPERATURE</span>
@@ -240,6 +272,10 @@ export default function KioskPage() {
                       if (msg.so2 != null) {
                         const el = document.getElementById('kiosk-so2');
                         if (el) el.innerText = Number(msg.so2).toFixed(1);
+                      if (msg.smoke != null || msg.so2 != null) {
+                        const val = Number(msg.smoke != null ? msg.smoke : msg.so2).toFixed(1);
+                        const el = document.getElementById('kiosk-smoke') || document.getElementById('kiosk-so2');
+                        if (el) el.innerText = val;
                       }
                       if (msg.temperature != null) {
                         const el = document.getElementById('kiosk-temp');
@@ -279,6 +315,10 @@ export default function KioskPage() {
                   if (data.so2 != null) {
                     var el = document.getElementById('kiosk-so2');
                     if (el) el.innerText = Number(data.so2).toFixed(1);
+                  if (data.smoke != null || data.so2 != null) {
+                    var val = Number(data.smoke != null ? data.smoke : data.so2).toFixed(1);
+                    var el = document.getElementById('kiosk-smoke') || document.getElementById('kiosk-so2');
+                    if (el) el.innerText = val;
                   }
                   if (data.temperature != null) {
                     var el = document.getElementById('kiosk-temp');
@@ -403,9 +443,13 @@ export default function KioskPage() {
               <span style={{ color: '#98b2b4', fontSize: '11px', fontWeight: 700, textTransform: 'uppercase' }}>SO₂</span>
               <b style={{ fontSize: '46px', display: 'block', letterSpacing: '-0.04em', margin: '6px 0', fontFamily: 'var(--font-mono)', color: liveMetrics.so2 > 40 ? '#fbbf24' : '#52d3a1' }}>
                 {liveMetrics.so2.toFixed(1)}
+              <span style={{ color: '#98b2b4', fontSize: '11px', fontWeight: 700, textTransform: 'uppercase' }}>SMOKE SENSOR</span>
+              <b style={{ fontSize: '46px', display: 'block', letterSpacing: '-0.04em', margin: '6px 0', fontFamily: 'var(--font-mono)', color: (liveMetrics.smoke ?? liveMetrics.so2) > 40 ? '#fbbf24' : '#52d3a1' }}>
+                {(liveMetrics.smoke ?? liveMetrics.so2).toFixed(1)}
               </b>
               <em style={{ fontSize: '11px', color: '#9ab2b4', fontStyle: 'normal' }}>
                 µg/m³ • {liveMetrics.so2 > 40 ? '↑ Elevated Level' : 'Benchmark OK'}
+                ppm • {(liveMetrics.smoke ?? liveMetrics.so2) > 40 ? '↑ Elevated Smoke / Gas' : 'Benchmark OK'}
               </em>
             </div>
 
@@ -510,6 +554,7 @@ export default function KioskPage() {
               Visible Metrics
             </div>
             {['PM2.5', 'SO₂', 'Temperature', 'Humidity', 'Wind Vector', 'Network Uptime'].map((metric) => (
+            {['PM2.5', 'Smoke Sensor', 'Temperature', 'Humidity', 'Wind Vector', 'Network Uptime'].map((metric) => (
               <div
                 key={metric}
                 style={{

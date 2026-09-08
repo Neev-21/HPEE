@@ -15,6 +15,7 @@ class KioskLiveStore:
         self.state: Dict[str, Any] = {
             "node_id": "S-001",
             "pm25": 24.5,
+            "smoke": 38.2,
             "so2": 12.0,
             "temperature": 29.4,
             "humidity": 65.0,
@@ -41,11 +42,27 @@ class KioskLiveStore:
         elif "pm25" in new_data:
             self.state["pm25"] = float(new_data["pm25"])
 
+        if "smoke" in measurements:
+            val = measurements["smoke"]
+            self.state["smoke"] = float(val["value"]) if isinstance(val, dict) and "value" in val else float(val)
+        elif "smoke" in new_data:
+            self.state["smoke"] = float(new_data["smoke"])
+        elif "so2" in measurements:
+            val = measurements["so2"]
+            self.state["smoke"] = float(val["value"]) if isinstance(val, dict) and "value" in val else float(val)
+        elif "so2" in new_data:
+            self.state["smoke"] = float(new_data["so2"])
+
         if "so2" in measurements:
             val = measurements["so2"]
             self.state["so2"] = float(val["value"]) if isinstance(val, dict) and "value" in val else float(val)
         elif "so2" in new_data:
             self.state["so2"] = float(new_data["so2"])
+        elif "smoke" in measurements:
+            val = measurements["smoke"]
+            self.state["so2"] = float(val["value"]) if isinstance(val, dict) and "value" in val else float(val)
+        elif "smoke" in new_data:
+            self.state["so2"] = float(new_data["smoke"])
 
         if "temperature" in measurements:
             val = measurements["temperature"]
@@ -93,6 +110,7 @@ class KioskLiveStore:
             "type": "TELEMETRY_UPDATE",
             "node_id": self.state["node_id"],
             "pm25": self.state["pm25"],
+            "smoke": self.state["smoke"],
             "so2": self.state["so2"],
             "temperature": self.state["temperature"],
             "humidity": self.state["humidity"],
@@ -129,5 +147,6 @@ async def post_kiosk_reading(request: Request):
 
     kiosk_store.update(payload)
     logger.info(f"[Kiosk API] Ingested live reading: PM2.5={kiosk_store.state['pm25']} SO2={kiosk_store.state['so2']}")
+    logger.info(f"[Kiosk API] Ingested live reading: PM2.5={kiosk_store.state['pm25']} Smoke={kiosk_store.state['smoke']} SO2={kiosk_store.state['so2']}")
     return {"status": "success", "data": kiosk_store.get()}
 

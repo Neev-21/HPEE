@@ -77,8 +77,11 @@ void loop() {
   float windDir = (potValue / 1023.0) * 359.0;   // 0 - 359 deg (strictly < 360)
 
   // 2. MQ-2 Smoke/Gas Sensor (Higher value = More Gas/Smoke, mapped to SO2 range)
+  // 2. MQ-2 Smoke/Gas Sensor (Higher value = More Gas/Smoke, mapped to Smoke & SO2 range)
   int mq2Raw = getAveragedAnalog(MQ2_PIN);
   float so2 = (mq2Raw / 1023.0) * 150.0; // 0 - 150 ug/m3
+  float smoke = (mq2Raw / 1023.0) * 100.0; // 0 - 100% Smoke Sensor Reading (ppm / level)
+  float so2 = (mq2Raw / 1023.0) * 150.0;   // 0 - 150 ug/m3
 
   // 3. Rain Sensor (Lower ADC value = More Rain)
   int rainRaw = getAveragedAnalog(RAIN_ANALOG_PIN);
@@ -97,6 +100,7 @@ void loop() {
   float pm25 = (dustRaw / 1023.0) * 500.0;
 
   // 5. DHT11 Temperature & Humidity=
+  // 5. DHT11 Temperature & Humidity
   byte temperature = 0, humidity = 0;
   bool dhtSuccess = readDHT11(temperature, humidity);
 
@@ -107,6 +111,7 @@ void loop() {
   Serial.print("\"location\":{\"latitude\":21.6335,\"longitude\":73.0162,\"altitude\":42.5},");
   Serial.print("\"measurements\":{");
   Serial.print("\"pm25\":"); Serial.print(pm25, 1);
+  Serial.print(",\"smoke\":"); Serial.print(smoke, 1);
   Serial.print(",\"so2\":"); Serial.print(so2, 1);
   if (dhtSuccess) {
     Serial.print(",\"temperature\":"); Serial.print((int)temperature);
