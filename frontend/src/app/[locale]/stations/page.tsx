@@ -3,6 +3,7 @@
 import { useTranslations } from 'next-intl';
 import { useEffect, useState } from 'react';
 import { fetchSensorNodes, type SensorNode } from '@/lib/api';
+import { liveSocket } from '@/lib/websocket';
 
 const STATUS_COLOR: Record<string, { bg: string; text: string; border: string }> = {
   online: { bg: '#e7f6ef', text: '#158363', border: '#158363' },
@@ -23,6 +24,41 @@ export default function StationsPage() {
       .then(setNodes)
       .catch((e) => console.error('Error fetching sensor nodes:', e))
       .finally(() => setLoading(false));
+
+    // Live update sensor node statuses and last_seen timestamps
+    const unsub = liveSocket.subscribe((msg) => {
+      if (msg.type === 'TELEMETRY_UPDATE') {
+        setNodes((prev) => {
+          const index = prev.findIndex((n) => n.node_id === msg.node_id);
+          const nowIso = msg.timestamp || new Date().toISOString();
+          if (index >= 0) {
+            const copy = [...prev];
+            copy[index] = {
+              ...copy[index],
+              status: 'online',
+              last_seen_at: nowIso,
+            };
+            return copy;
+          } else {
+            // Dynamically show newly detected/registered node
+            return [
+              {
+                node_id: msg.node_id,
+                name: `Sensor Node ${msg.node_id}`,
+                status: 'online',
+                last_seen_at: nowIso,
+                location: null,
+                battery_percent: 100,
+                signal_strength: -55,
+              },
+              ...prev,
+            ];
+          }
+        });
+      }
+    });
+
+    return () => unsub();
   }, []);
 
   const filtered = nodes.filter(

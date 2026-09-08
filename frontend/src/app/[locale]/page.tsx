@@ -129,6 +129,31 @@ export default function OverviewPage() {
       if (msg.type === 'TELEMETRY_UPDATE') {
         setNodes((prev) => {
           if (!prev) return prev;
+          const exists = prev.features.some((f) => f.properties.node_id === msg.node_id);
+          if (!exists) {
+            const newFeature: GeoJSONFeature = {
+              type: 'Feature',
+              geometry: {
+                type: 'Point',
+                coordinates: [73.0162, 21.6335],
+              },
+              properties: {
+                node_id: msg.node_id,
+                name: `Sensor ${msg.node_id}`,
+                status: 'online',
+                pm25: msg.pm25,
+                pm10: msg.pm10,
+                so2: msg.so2,
+                temperature: msg.temperature,
+                humidity: msg.humidity,
+                wind_speed: msg.wind_speed,
+              },
+            };
+            return {
+              ...prev,
+              features: [newFeature, ...prev.features],
+            };
+          }
           return {
             ...prev,
             features: prev.features.map((f) => {
@@ -137,6 +162,7 @@ export default function OverviewPage() {
                   ...f,
                   properties: {
                     ...f.properties,
+                    status: 'online',
                     pm25: msg.pm25 ?? f.properties.pm25,
                     pm10: msg.pm10 ?? f.properties.pm10,
                     so2: msg.so2 ?? f.properties.so2,
@@ -152,6 +178,10 @@ export default function OverviewPage() {
         });
 
         if (msg.node_id === selectedNodeId) {
+          if (msg.pm25 != null || msg.so2 != null) {
+            const isAbnormal = (msg.pm25 != null && msg.pm25 > 60) || (msg.so2 != null && msg.so2 > 40);
+            setNodeStatus(isAbnormal ? 'INVESTIGATE' : 'ONLINE');
+          }
           setReadings((prev) =>
             prev.map((r) => {
               if (r.label === 'PM2.5' && msg.pm25 != null) {

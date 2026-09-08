@@ -12,6 +12,7 @@ import {
   type PollutionEvent,
   type ComplaintDetails,
 } from '@/lib/api';
+import { liveSocket } from '@/lib/websocket';
 
 export default function CompliancePage() {
   const t = useTranslations('Compliance');
@@ -56,6 +57,18 @@ export default function CompliancePage() {
       }
     }
     init();
+
+    // Subscribe to live incident alerts
+    const unsubWs = liveSocket.subscribe((msg) => {
+      if (msg.type === 'POLLUTION_ALERT') {
+        showToast(`🚨 New Pollution Incident: ${msg.severity.toUpperCase()} at ${msg.village_name}. Events list updated.`);
+        fetchPollutionEvents().then((evList) => {
+          setEvents(evList);
+        }).catch(() => {});
+      }
+    });
+
+    return () => unsubWs();
   }, [queryEventId]);
 
   const loadComplaintForEvent = async (eventId: string) => {

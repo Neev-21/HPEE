@@ -3,12 +3,28 @@
 import React, { useEffect, useState } from 'react';
 import { appStore, type PlantDisplaySettings } from '@/lib/store';
 import { fetchSensorNodes, fetchPollutionEvents, type SensorNode, type PollutionEvent } from '@/lib/api';
+import { liveSocket } from '@/lib/websocket';
 
 export default function KioskPage() {
   const [settings, setSettings] = useState<PlantDisplaySettings>(appStore.getDisplaySettings());
   const [nodes, setNodes] = useState<SensorNode[]>([]);
   const [activeEvent, setActiveEvent] = useState<PollutionEvent | null>(null);
   const [toast, setToast] = useState<string | null>(null);
+
+  // Live real-time telemetry metrics
+  const [liveMetrics, setLiveMetrics] = useState({
+    pm25: 84.6,
+    so2: 42.7,
+    temperature: 29.4,
+    humidity: 71,
+    windSpeed: 4.8,
+    activeNodeId: 'S-001',
+    onlineCount: 20,
+    totalCount: 20,
+  });
+  const [alertMessage, setAlertMessage] = useState<string | null>(
+    '⚠ ENVIRONMENTAL EVENT DETECTED • Probable source: Boiler Area (Apex Agro-Chem Synthesis) • Confidence 89.5%'
+  );
 
   const showToast = (msg: string) => {
     setToast(msg);
@@ -21,13 +37,48 @@ export default function KioskPage() {
       setSettings(appStore.getDisplaySettings());
     });
 
-    fetchSensorNodes().then(setNodes).catch(() => {});
+    fetchSensorNodes().then((nds) => {
+      setNodes(nds);
+      const online = nds.filter((n) => n.status === 'online' || n.status === 'pending').length;
+      setLiveMetrics((prev) => ({
+        ...prev,
+        onlineCount: online || 20,
+        totalCount: nds.length || 20,
+      }));
+    }).catch(() => {});
+
     fetchPollutionEvents().then((evs) => {
       const active = evs.find((e) => e.status === 'active') || evs[0] || null;
       setActiveEvent(active);
+      if (active) {
+        setAlertMessage(
+          `⚠ ENVIRONMENTAL EVENT DETECTED • Probable source: ${active.village_name || 'Industrial Zone'} • Severity: ${active.severity.toUpperCase()}`
+        );
+      }
     }).catch(() => {});
 
-    return unsub;
+    // Subscribe to live telemetry and alerts from WebSocket
+    const unsubWs = liveSocket.subscribe((msg) => {
+      if (msg.type === 'TELEMETRY_UPDATE') {
+        setLiveMetrics((prev) => ({
+          ...prev,
+          pm25: msg.pm25 != null ? Number(msg.pm25) : prev.pm25,
+          so2: msg.so2 != null ? Number(msg.so2) : prev.so2,
+          temperature: msg.temperature != null ? Number(msg.temperature) : prev.temperature,
+          humidity: msg.humidity != null ? Number(msg.humidity) : prev.humidity,
+          windSpeed: msg.wind_speed != null ? Number(msg.wind_speed) : prev.windSpeed,
+          activeNodeId: msg.node_id || prev.activeNodeId,
+        }));
+      } else if (msg.type === 'POLLUTION_ALERT') {
+        const culprit = msg.primary_culprit ? ` • Attributed: ${msg.primary_culprit.name} (${(msg.primary_culprit.probability_score * 100).toFixed(0)}%)` : '';
+        setAlertMessage(`⚠ ACTIVE ENVIRONMENTAL SURGE: ${msg.severity.toUpperCase()} anomaly at ${msg.village_name}${culprit}`);
+      }
+    });
+
+    return () => {
+      unsub();
+      unsubWs();
+    };
   }, []);
 
   const openPopupDisplay = () => {
@@ -37,8 +88,14 @@ export default function KioskPage() {
       return;
     }
 
-    const pm25 = activeEvent?.peak_pm25 ?? 84.6;
-    const so2 = activeEvent?.peak_so2 ?? 42.7;
+    const pm25 = liveMetrics.pm25;
+    const so2 = liveMetrics.so2;
+    const temp = liveMetrics.temperature;
+    const hum = liveMetrics.humidity;
+    const wind = liveMetrics.windSpeed;
+    const online = liveMetrics.onlineCount;
+    const total = liveMetrics.totalCount;
+    const alertText = alertMessage || 'NO CRITICAL ENVIRONMENTAL ALERTS ACTIVE';
 
     w.document.write(`
       <!DOCTYPE html>
@@ -103,39 +160,88 @@ export default function KioskPage() {
         <div class="grid">
           <div class="card">
             <span class="lbl">PM2.5 CONCENTRATION</span>
-            <span class="val" style="color:#f87171;">${Number(pm25).toFixed(1)}</span>
+            <span class="val" id="kiosk-pm25" style="color:#f87171;">${Number(pm25).toFixed(1)}</span>
             <span class="unit">µg/m³ • CPCB 24h Threshold: 60</span>
           </div>
           <div class="card">
             <span class="lbl">SO₂ TOXIC GAS</span>
-            <span class="val" style="color:#fbbf24;">${Number(so2).toFixed(1)}</span>
+            <span class="val" id="kiosk-so2" style="color:#fbbf24;">${Number(so2).toFixed(1)}</span>
             <span class="unit">ppb • CPCB Benchmark: 80</span>
           </div>
           <div class="card">
             <span class="lbl">AMBIENT TEMPERATURE</span>
-            <span class="val">29.4</span>
-            <span class="unit">°C • Stable Thermal Inversion</span>
+            <span class="val" id="kiosk-temp">${Number(temp).toFixed(1)}</span>
+            <span class="unit">°C • Ambient Thermal</span>
           </div>
           <div class="card">
             <span class="lbl">RELATIVE HUMIDITY</span>
-            <span class="val">71</span>
-            <span class="unit">% • Atmospheric Boundary Layer</span>
+            <span class="val" id="kiosk-hum">${Math.round(Number(hum))}</span>
+            <span class="unit">% • Relative Moisture</span>
           </div>
           <div class="card">
             <span class="lbl">WIND VECTOR</span>
-            <span class="val">4.8</span>
-            <span class="unit">m/s • SE Direction (135°)</span>
+            <span class="val" id="kiosk-wind">${Number(wind).toFixed(1)}</span>
+            <span class="unit">m/s • Real-time Anemometer</span>
           </div>
           <div class="card">
             <span class="lbl">NETWORK INTEGRITY</span>
-            <span class="val" style="color:#52d3a1;">20/20</span>
-            <span class="unit">Sensors Online • 99.8% Uptime</span>
+            <span class="val" id="kiosk-network" style="color:#52d3a1;">${online}/${total}</span>
+            <span class="unit">Sensors Online • Live Status</span>
           </div>
         </div>
 
-        <div class="alert">
-          ⚠ ACTIVE ENVIRONMENTAL SURGE: Attributed Source: Apex Agro-Chem Synthesis (Plot 805, GIDC Phase III) • Confidence 89.5%
+        <div class="alert" id="kiosk-alert">
+          ${alertText}
         </div>
+
+        <script>
+          (function() {
+            const proto = window.location.protocol === 'https:' ? 'wss:' : 'ws:';
+            const host = window.location.hostname || '127.0.0.1';
+            const wsUrl = proto + '//' + host + ':8100/api/v1/ws/live?token=hpee-live-token';
+            let ws;
+            function connect() {
+              try {
+                ws = new WebSocket(wsUrl);
+                ws.onmessage = function(event) {
+                  try {
+                    const msg = JSON.parse(event.data);
+                    if (msg.type === 'TELEMETRY_UPDATE') {
+                      if (msg.pm25 != null) {
+                        const el = document.getElementById('kiosk-pm25');
+                        if (el) el.innerText = Number(msg.pm25).toFixed(1);
+                      }
+                      if (msg.so2 != null) {
+                        const el = document.getElementById('kiosk-so2');
+                        if (el) el.innerText = Number(msg.so2).toFixed(1);
+                      }
+                      if (msg.temperature != null) {
+                        const el = document.getElementById('kiosk-temp');
+                        if (el) el.innerText = Number(msg.temperature).toFixed(1);
+                      }
+                      if (msg.humidity != null) {
+                        const el = document.getElementById('kiosk-hum');
+                        if (el) el.innerText = Math.round(Number(msg.humidity));
+                      }
+                      if (msg.wind_speed != null) {
+                        const el = document.getElementById('kiosk-wind');
+                        if (el) el.innerText = Number(msg.wind_speed).toFixed(1);
+                      }
+                    } else if (msg.type === 'POLLUTION_ALERT') {
+                      const el = document.getElementById('kiosk-alert');
+                      if (el) {
+                        const culprit = msg.primary_culprit ? ' • Attributed: ' + msg.primary_culprit.name : '';
+                        el.innerText = '⚠ ACTIVE ENVIRONMENTAL SURGE: ' + msg.severity.toUpperCase() + ' anomaly at ' + msg.village_name + culprit;
+                      }
+                    }
+                  } catch(err) {}
+                };
+                ws.onclose = function() { setTimeout(connect, 3000); };
+              } catch(e) { setTimeout(connect, 5000); }
+            }
+            connect();
+          })();
+        </script>
       </body>
       </html>
     `);
@@ -230,24 +336,28 @@ export default function KioskPage() {
           <div style={{ display: 'grid', gridTemplateColumns: 'repeat(3, 1fr)', gap: '14px', margin: '24px 0' }}>
             <div style={{ background: 'rgba(255,255,255,0.07)', border: '1px solid rgba(255,255,255,0.11)', padding: '20px' }}>
               <span style={{ color: '#98b2b4', fontSize: '11px', fontWeight: 700, textTransform: 'uppercase' }}>PM2.5</span>
-              <b style={{ fontSize: '46px', display: 'block', letterSpacing: '-0.04em', margin: '6px 0', fontFamily: 'var(--font-mono)', color: '#f87171' }}>
-                84.6
+              <b style={{ fontSize: '46px', display: 'block', letterSpacing: '-0.04em', margin: '6px 0', fontFamily: 'var(--font-mono)', color: liveMetrics.pm25 > 60 ? '#f87171' : '#52d3a1' }}>
+                {liveMetrics.pm25.toFixed(1)}
               </b>
-              <em style={{ fontSize: '11px', color: '#9ab2b4', fontStyle: 'normal' }}>µg/m³ • ↑ 2.4× baseline</em>
+              <em style={{ fontSize: '11px', color: '#9ab2b4', fontStyle: 'normal' }}>
+                µg/m³ • {liveMetrics.pm25 > 60 ? '↑ Above 24h Threshold (60)' : 'Normal Level'}
+              </em>
             </div>
 
             <div style={{ background: 'rgba(255,255,255,0.07)', border: '1px solid rgba(255,255,255,0.11)', padding: '20px' }}>
               <span style={{ color: '#98b2b4', fontSize: '11px', fontWeight: 700, textTransform: 'uppercase' }}>SO₂</span>
-              <b style={{ fontSize: '46px', display: 'block', letterSpacing: '-0.04em', margin: '6px 0', fontFamily: 'var(--font-mono)', color: '#fbbf24' }}>
-                42.7
+              <b style={{ fontSize: '46px', display: 'block', letterSpacing: '-0.04em', margin: '6px 0', fontFamily: 'var(--font-mono)', color: liveMetrics.so2 > 40 ? '#fbbf24' : '#52d3a1' }}>
+                {liveMetrics.so2.toFixed(1)}
               </b>
-              <em style={{ fontSize: '11px', color: '#9ab2b4', fontStyle: 'normal' }}>ppb • ↑ 1.8× baseline</em>
+              <em style={{ fontSize: '11px', color: '#9ab2b4', fontStyle: 'normal' }}>
+                µg/m³ • {liveMetrics.so2 > 40 ? '↑ Elevated Level' : 'Benchmark OK'}
+              </em>
             </div>
 
             <div style={{ background: 'rgba(255,255,255,0.07)', border: '1px solid rgba(255,255,255,0.11)', padding: '20px' }}>
               <span style={{ color: '#98b2b4', fontSize: '11px', fontWeight: 700, textTransform: 'uppercase' }}>TEMPERATURE</span>
               <b style={{ fontSize: '46px', display: 'block', letterSpacing: '-0.04em', margin: '6px 0', fontFamily: 'var(--font-mono)' }}>
-                29.4
+                {liveMetrics.temperature.toFixed(1)}
               </b>
               <em style={{ fontSize: '11px', color: '#9ab2b4', fontStyle: 'normal' }}>°C • Ambient Thermal</em>
             </div>
@@ -255,7 +365,7 @@ export default function KioskPage() {
             <div style={{ background: 'rgba(255,255,255,0.07)', border: '1px solid rgba(255,255,255,0.11)', padding: '20px' }}>
               <span style={{ color: '#98b2b4', fontSize: '11px', fontWeight: 700, textTransform: 'uppercase' }}>HUMIDITY</span>
               <b style={{ fontSize: '46px', display: 'block', letterSpacing: '-0.04em', margin: '6px 0', fontFamily: 'var(--font-mono)' }}>
-                71
+                {Math.round(liveMetrics.humidity)}
               </b>
               <em style={{ fontSize: '11px', color: '#9ab2b4', fontStyle: 'normal' }}>% • Relative Moisture</em>
             </div>
@@ -263,15 +373,15 @@ export default function KioskPage() {
             <div style={{ background: 'rgba(255,255,255,0.07)', border: '1px solid rgba(255,255,255,0.11)', padding: '20px' }}>
               <span style={{ color: '#98b2b4', fontSize: '11px', fontWeight: 700, textTransform: 'uppercase' }}>WIND</span>
               <b style={{ fontSize: '46px', display: 'block', letterSpacing: '-0.04em', margin: '6px 0', fontFamily: 'var(--font-mono)' }}>
-                4.8
+                {liveMetrics.windSpeed.toFixed(1)}
               </b>
-              <em style={{ fontSize: '11px', color: '#9ab2b4', fontStyle: 'normal' }}>m/s • SE Direction</em>
+              <em style={{ fontSize: '11px', color: '#9ab2b4', fontStyle: 'normal' }}>m/s • Real-time Anemometer</em>
             </div>
 
             <div style={{ background: 'rgba(255,255,255,0.07)', border: '1px solid rgba(255,255,255,0.11)', padding: '20px' }}>
               <span style={{ color: '#98b2b4', fontSize: '11px', fontWeight: 700, textTransform: 'uppercase' }}>NETWORK</span>
               <b style={{ fontSize: '46px', display: 'block', letterSpacing: '-0.04em', margin: '6px 0', fontFamily: 'var(--font-mono)', color: '#52d3a1' }}>
-                20/20
+                {liveMetrics.onlineCount}/{liveMetrics.totalCount}
               </b>
               <em style={{ fontSize: '11px', color: '#9ab2b4', fontStyle: 'normal' }}>Active Monitoring Nodes</em>
             </div>
@@ -289,7 +399,7 @@ export default function KioskPage() {
               letterSpacing: '0.4px',
             }}
           >
-            ⚠ ENVIRONMENTAL EVENT DETECTED • Probable source: Boiler Area (Apex Agro-Chem Synthesis) • Confidence 89.5%
+            {alertMessage || 'NO ACTIVE POLLUTION SURGE DETECTED'}
           </div>
         </div>
 
