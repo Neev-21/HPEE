@@ -27,8 +27,8 @@ export default async function LocaleLayout({
       <head>
         <meta charSet="utf-8" />
         <meta name="viewport" content="width=device-width, initial-scale=1" />
-        <title>GPCB — Environmental Monitoring System</title>
-        <meta name="description" content="Gujarat Pollution Control Board — Hyperlocal Pollution Evidence Engine" />
+        <title>HPEE — Environmental Monitoring System</title>
+        <meta name="description" content="Hyperlocal Pollution Evidence Engine — Environmental Monitoring System" />
       </head>
       <body>
         <NextIntlClientProvider messages={messages} locale={locale}>

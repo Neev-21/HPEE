@@ -33,7 +33,9 @@ services:
     restart: unless-stopped
     ports:
       - "8100:8100"
-    command: ["uvicorn", "backend.app.main:app", "--host", "0.0.0.0", "--port", "8100"]
+    command: ["uvicorn", "backend.app.main:app", "--host", "0.0.0.0", "--port", "8100", "--reload"]
+    volumes:
+      - ./backend:/app/backend
     environment:
       - DATABASE_URL=postgresql+psycopg://hpee_admin:hpee_dev_password@postgres:5432/hpee
     depends_on:

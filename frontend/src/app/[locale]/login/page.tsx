@@ -7,7 +7,7 @@ import { login } from '@/lib/auth';
 const ROLE_OPTIONS = [
   { value: 'admin', emailHint: 'admin@gpcb.gov.in', passHint: 'gpcb@admin2026' },
   { value: 'inspector', emailHint: 'inspector.ankleshwar@gpcb.gov.in', passHint: 'inspector@gpcb2026' },
-  { value: 'sarpanch', emailHint: 'sarpanch.piraman@gujarat.gov.in', passHint: 'sarpanch@piraman2026' },
+  { value: 'sarpanch', emailHint: 'sarpanch.piraman@hpee.gov.in', passHint: 'sarpanch@piraman2026' },
 ];
 
 export default function LoginPage() {
@@ -177,7 +177,7 @@ export default function LoginPage() {
         <div style={{ padding: '0 20px 16px', fontSize: '11px', color: '#a8a29e', lineHeight: 1.6 }}>
           DEV CREDENTIALS: admin@gpcb.gov.in / gpcb@admin2026<br />
           inspector.ankleshwar@gpcb.gov.in / inspector@gpcb2026<br />
-          sarpanch.piraman@gujarat.gov.in / sarpanch@piraman2026
+          sarpanch.piraman@hpee.gov.in / sarpanch@piraman2026
         </div>
       </div>
     </div>

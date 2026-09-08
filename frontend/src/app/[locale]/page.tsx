@@ -1,8 +1,9 @@
 'use client';
 
 import { useTranslations } from 'next-intl';
-import { useEffect, useState } from 'react';
+import { useEffect, useState, useTransition } from 'react';
 import dynamic from 'next/dynamic';
+import { useRouter, useParams } from 'next/navigation';
 import {
   fetchNodesGeoJSON,
   fetchIndustriesGeoJSON,
@@ -12,17 +13,13 @@ import {
   type GeoJSONFeature,
   type PollutionEvent,
 } from '@/lib/api';
+import { appStore, type BlueprintPin } from '@/lib/store';
+import { liveSocket } from '@/lib/websocket';
+import FacilityBlueprint from '@/components/Blueprint/FacilityBlueprint';
+import NodeDetailPanel, { type NodeMeasurement } from '@/components/DetailPanel/NodeDetailPanel';
 
 const GisMap = dynamic(() => import('@/components/Map/GisMap'), { ssr: false });
 
-const SEVERITY_COLORS: Record<string, string> = {
-  critical: '#dc2626',
-  severe: '#dc2626',
-  watch: '#d97706',
-  normal: '#16a34a',
-};
-
-const CPCB_LIMITS = { pm25: 60, so2: 80 };
 const ANKLESHWAR_BOUNDS = {
   centerLat: 21.62,
   centerLon: 73.02,
@@ -33,7 +30,7 @@ function filterNearbyGeoJSON(
   collection: GeoJSONFeatureCollection | null,
   centerLat: number,
   centerLon: number,
-  radiusKm: number,
+  radiusKm: number
 ): GeoJSONFeatureCollection | null {
   if (!collection) return null;
 
@@ -56,6 +53,9 @@ function filterNearbyGeoJSON(
 export default function OverviewPage() {
   const t = useTranslations('Overview');
   const tCommon = useTranslations('Common');
+  const router = useRouter();
+  const params = useParams();
+  const locale = params?.locale || 'en';
 
   const [nodes, setNodes] = useState<GeoJSONFeatureCollection | null>(null);
   const [industries, setIndustries] = useState<GeoJSONFeatureCollection | null>(null);
@@ -63,7 +63,19 @@ export default function OverviewPage() {
   const [plumeCone, setPlumeCone] = useState<GeoJSONFeature | null>(null);
   const [windVector, setWindVector] = useState<GeoJSONFeature | null>(null);
   const [loading, setLoading] = useState(true);
-  const [error, setError] = useState<string | null>(null);
+  const [viewMode, setViewMode] = useState<'blueprint' | 'gis'>('blueprint');
+
+  // Selected node state
+  const [selectedNodeId, setSelectedNodeId] = useState('S-001');
+  const [selectedZone, setSelectedZone] = useState('Boiler Area');
+  const [selectedNodeName, setSelectedNodeName] = useState('Boiler Sensor 01');
+  const [nodeStatus, setNodeStatus] = useState<'ONLINE' | 'INVESTIGATE' | 'OFFLINE'>('ONLINE');
+  const [readings, setReadings] = useState<NodeMeasurement[]>([
+    { label: 'PM2.5', value: '84.6', unit: 'µg/m³', isAlert: true },
+    { label: 'SO₂', value: '42.7', unit: 'µg/m³', isAlert: true },
+    { label: 'Temperature', value: '29.4', unit: '°C' },
+    { label: 'Humidity', value: '71', unit: '%' },
+  ]);
 
   useEffect(() => {
     async function load() {
@@ -74,18 +86,17 @@ export default function OverviewPage() {
           fetchPollutionEvents(),
         ]);
 
-        // Keep the map fast and focused on the active local Ankleshwar cluster.
         const filteredNodes = filterNearbyGeoJSON(
           nodesData,
           ANKLESHWAR_BOUNDS.centerLat,
           ANKLESHWAR_BOUNDS.centerLon,
-          ANKLESHWAR_BOUNDS.radiusKm,
+          ANKLESHWAR_BOUNDS.radiusKm
         );
         const filteredIndustries = filterNearbyGeoJSON(
           industriesData,
           ANKLESHWAR_BOUNDS.centerLat,
           ANKLESHWAR_BOUNDS.centerLon,
-          ANKLESHWAR_BOUNDS.radiusKm,
+          ANKLESHWAR_BOUNDS.radiusKm
         );
 
         setNodes(filteredNodes);
@@ -99,270 +110,312 @@ export default function OverviewPage() {
             const layers = await fetchEventGisLayers(active.event_id);
             if (layers.layers.plume_cone) setPlumeCone(layers.layers.plume_cone as GeoJSONFeature);
             if (layers.layers.wind_vector) setWindVector(layers.layers.wind_vector as GeoJSONFeature);
-          } catch { /* plume layers optional */ }
+          } catch {
+            /* plume layers optional */
+          }
         }
       } catch (e) {
-        setError(tCommon('error'));
-        console.error(e);
+        console.error('Error loading overview data:', e);
       } finally {
         setLoading(false);
       }
     }
-    load().catch(() => { /* backend offline */ });
-  }, [tCommon]);
-
-  // WebSocket Live Connection
-  useEffect(() => {
-    // If running dev server on 3100 and backend on 8100, Next.js must proxy this route
-    const protocol = window.location.protocol === 'https:' ? 'wss:' : 'ws:';
-    const wsUrl = `${protocol}//${window.location.host}/api/v1/ws/live?token=hpee-live-token`;
-    
-    let ws: WebSocket;
-    let reconnectTimer: NodeJS.Timeout;
-
-    const connectWS = () => {
-      ws = new WebSocket(wsUrl);
-
-      ws.onopen = () => {
-        console.log('WebSocket connected to', wsUrl);
-      };
-
-      ws.onmessage = (event) => {
-        try {
-          const data = JSON.parse(event.data);
-          
-          if (data.type === 'TELEMETRY_UPDATE') {
-            setNodes((prevNodes) => {
-              if (!prevNodes) return prevNodes;
-              return {
-                ...prevNodes,
-                features: prevNodes.features.map((f) => {
-                  if (f.properties.node_id === data.node_id) {
-                    return {
-                      ...f,
-                      properties: {
-                        ...f.properties,
-                        pm25: data.pm25 !== null ? data.pm25 : f.properties.pm25,
-                        pm10: data.pm10 !== null ? data.pm10 : f.properties.pm10,
-                        so2: data.so2 !== null ? data.so2 : f.properties.so2,
-                        nox: data.nox !== null ? data.nox : f.properties.nox,
-                        no2: data.no2 !== null ? data.no2 : f.properties.no2,
-                        co: data.co !== null ? data.co : f.properties.co,
-                        co2: data.co2 !== null ? data.co2 : f.properties.co2,
-                      }
-                    };
-                  }
-                  return f;
-                })
-              };
-            });
-          } else if (data.type === 'POLLUTION_ALERT') {
-            setActiveEvent((prev) => {
-              // Fetch latest GIS layers for the new or updated event
-              fetchEventGisLayers(data.event_id)
-                .then((layers) => {
-                  if (layers.layers.plume_cone) setPlumeCone(layers.layers.plume_cone as GeoJSONFeature);
-                  if (layers.layers.wind_vector) setWindVector(layers.layers.wind_vector as GeoJSONFeature);
-                })
-                .catch(console.error);
-
-              return {
-                event_id: data.event_id,
-                status: 'active',
-                severity: data.severity,
-                village_name: data.village_name,
-                peak_pm25: data.peak_pm25,
-                peak_so2: data.peak_so2,
-                detected_at: data.started_at || new Date().toISOString(),
-                // Fill other required properties if necessary
-              } as PollutionEvent;
-            });
-          }
-        } catch (err) {
-          console.error('Error parsing WS message:', err);
-        }
-      };
-
-      ws.onclose = () => {
-        console.log('WebSocket closed. Reconnecting in 5s...');
-        reconnectTimer = setTimeout(connectWS, 5000);
-      };
-    };
-
-    connectWS();
-
-    return () => {
-      clearTimeout(reconnectTimer);
-      if (ws) {
-        ws.onclose = null; // Prevent reconnect on unmount
-        ws.close();
-      }
-    };
+    load().catch(() => {});
   }, []);
 
+  // Live WebSocket streaming + fallback polling
+  useEffect(() => {
+    const unsubscribe = liveSocket.subscribe((msg) => {
+      if (msg.type === 'TELEMETRY_UPDATE') {
+        setNodes((prev) => {
+          if (!prev) return prev;
+          return {
+            ...prev,
+            features: prev.features.map((f) => {
+              if (f.properties.node_id === msg.node_id) {
+                return {
+                  ...f,
+                  properties: {
+                    ...f.properties,
+                    pm25: msg.pm25 ?? f.properties.pm25,
+                    pm10: msg.pm10 ?? f.properties.pm10,
+                    so2: msg.so2 ?? f.properties.so2,
+                    temperature: msg.temperature ?? f.properties.temperature,
+                    humidity: msg.humidity ?? f.properties.humidity,
+                    wind_speed: msg.wind_speed ?? f.properties.wind_speed,
+                  },
+                };
+              }
+              return f;
+            }),
+          };
+        });
+
+        if (msg.node_id === selectedNodeId) {
+          setReadings((prev) =>
+            prev.map((r) => {
+              if (r.label === 'PM2.5' && msg.pm25 != null) {
+                return { ...r, value: Number(msg.pm25).toFixed(1), isAlert: msg.pm25 > 60 };
+              }
+              if (r.label === 'SO₂' && msg.so2 != null) {
+                return { ...r, value: Number(msg.so2).toFixed(1), isAlert: msg.so2 > 40 };
+              }
+              if (r.label === 'Temperature' && msg.temperature != null) {
+                return { ...r, value: Number(msg.temperature).toFixed(1) };
+              }
+              if (r.label === 'Humidity' && msg.humidity != null) {
+                return { ...r, value: Number(msg.humidity).toFixed(1) };
+              }
+              return r;
+            })
+          );
+        }
+      } else if (msg.type === 'POLLUTION_ALERT') {
+        setActiveEvent({
+          event_id: msg.event_id,
+          village_name: msg.village_name,
+          severity: msg.severity,
+          status: 'active',
+          detected_at: msg.started_at || new Date().toISOString(),
+          started_at: msg.started_at || new Date().toISOString(),
+          peak_pm25: msg.peak_pm25,
+          peak_so2: msg.peak_so2,
+        });
+
+        fetchEventGisLayers(msg.event_id)
+          .then((layers) => {
+            if (layers.layers.plume_cone) setPlumeCone(layers.layers.plume_cone as GeoJSONFeature);
+            if (layers.layers.wind_vector) setWindVector(layers.layers.wind_vector as GeoJSONFeature);
+          })
+          .catch(() => {});
+      }
+    });
+
+    // Background poll fallback every 30s
+    const pollTimer = setInterval(async () => {
+      try {
+        const [nodesData, events] = await Promise.all([
+          fetchNodesGeoJSON(),
+          fetchPollutionEvents(),
+        ]);
+        setNodes(filterNearbyGeoJSON(nodesData, ANKLESHWAR_BOUNDS.centerLat, ANKLESHWAR_BOUNDS.centerLon, ANKLESHWAR_BOUNDS.radiusKm));
+        const active = events.find((e) => e.status === 'active') || events[0] || null;
+        setActiveEvent(active);
+      } catch {
+        /* ignore */
+      }
+    }, 30_000);
+
+    return () => {
+      unsubscribe();
+      clearInterval(pollTimer);
+    };
+  }, [selectedNodeId]);
+
+  // Handler when a pin in the blueprint is clicked
+  const handleSelectBlueprintPin = (pin: BlueprintPin) => {
+    setSelectedNodeId(pin.sensorId);
+    setSelectedZone(pin.zone);
+    setSelectedNodeName(pin.sensorId);
+
+    // Update measurements from configured store
+    const sensorConfig = appStore.getSensors().find((s) => s.id === pin.sensorId);
+    setNodeStatus(sensorConfig?.status ?? 'ONLINE');
+
+    const vals: Record<string, [string, string]> = {
+      'PM2.5': ['84.6', 'µg/m³'],
+      'SO₂': ['42.7', 'µg/m³'],
+      Temperature: ['29.4', '°C'],
+      Humidity: ['71', '%'],
+      VOC: ['18.2', 'ppb'],
+      CO: ['1.7', 'ppm'],
+      'NO₂': ['22.1', 'µg/m³'],
+      'Wind Speed': ['4.8', 'm/s'],
+    };
+
+    const newReadings: NodeMeasurement[] = (pin.measurements || ['PM2.5', 'SO₂', 'Temperature']).map((m) => {
+      const [val, unit] = vals[m] || ['25.0', ''];
+      const num = parseFloat(val);
+      const isAlert = (m === 'PM2.5' && num > 60) || (m === 'SO₂' && num > 40);
+      return { label: m, value: val, unit, isAlert };
+    });
+
+    setReadings(newReadings);
+  };
+
+  // Handler when a GIS map circle marker is clicked
+  const handleSelectGisNode = (nodeId: string) => {
+    const feature = nodes?.features.find((f) => String(f.properties.node_id) === nodeId);
+    if (!feature) return;
+
+    const p = feature.properties as Record<string, unknown>;
+    setSelectedNodeId(nodeId);
+    setSelectedNodeName(String(p.name || p.village_name || nodeId));
+    setSelectedZone(String(p.district || p.village_name || 'Industrial Zone'));
+    setNodeStatus(p.status === 'online' ? 'ONLINE' : p.status === 'degraded' ? 'INVESTIGATE' : 'OFFLINE');
+
+    setReadings([
+      { label: 'PM2.5', value: p.pm25 != null ? Number(p.pm25).toFixed(1) : '—', unit: 'µg/m³', isAlert: Number(p.pm25) > 60 },
+      { label: 'SO₂', value: p.so2 != null ? Number(p.so2).toFixed(1) : '—', unit: 'µg/m³', isAlert: Number(p.so2) > 40 },
+      { label: 'Temperature', value: p.temperature != null ? Number(p.temperature).toFixed(1) : '28.5', unit: '°C' },
+      { label: 'Humidity', value: p.humidity != null ? Number(p.humidity).toFixed(1) : '72', unit: '%' },
+      { label: 'Wind Speed', value: p.wind_speed != null ? Number(p.wind_speed).toFixed(1) : '3.2', unit: 'm/s' },
+      { label: 'Battery', value: p.battery_percent != null ? `${p.battery_percent}%` : '95%' },
+    ]);
+  };
+
   return (
-    <div className="flex flex-col md:flex-row h-[calc(100vh-118px)] w-full">
-      {/* ---- LEFT: GIS Map ---- */}
-      <div className="relative flex-1 border-b-2 md:border-b-0 md:border-r-2 border-stone-300 min-h-[50vh] md:min-h-0 overflow-hidden">
-        {/* Map panel header */}
-        <div style={{
-          position: 'absolute', top: 0, left: 0, right: 0,
-          background: 'rgba(255,255,255,0.95)',
-          borderBottom: '1px solid #e4e4e7',
-          padding: '6px 12px',
-          display: 'flex', justifyContent: 'space-between', alignItems: 'center',
-          zIndex: 800, fontSize: '11px',
-        }}>
-          <div>
-            <strong style={{ textTransform: 'uppercase', letterSpacing: '0.5px' }}>{t('mapTitle')}</strong>
-            <span style={{ color: '#71717a', marginLeft: 8 }}>{t('mapSubtitle')}</span>
+    <div style={{ padding: '16px', maxWidth: '1600px', margin: '0 auto' }}>
+      {/* Top Header & Refresh */}
+      <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'flex-start', marginBottom: '16px' }}>
+        <div>
+          <div style={{ textTransform: 'uppercase', letterSpacing: '0.12em', color: '#0d7778', fontSize: '10px', fontWeight: 800 }}>
+            FACILITY OVERVIEW
           </div>
-          <span style={{ fontFamily: 'var(--font-mono)', color: '#71717a' }}>MAP / 01</span>
+          <h1 style={{ fontSize: '26px', fontWeight: 900, margin: '3px 0 2px', letterSpacing: '-0.03em', color: '#09090b' }}>
+            Live Environmental Status
+          </h1>
+          <div style={{ fontSize: '12px', color: '#71717a' }}>
+            Interactive blueprint & regional GIS air monitoring console. Select any node to view real-time calibrated readings.
+          </div>
         </div>
-        <div style={{ position: 'absolute', inset: 0, paddingTop: 32 }}>
-          {loading ? (
-            <div style={{ display: 'flex', alignItems: 'center', justifyContent: 'center', height: '100%', color: '#71717a' }}>
-              {tCommon('loading')}
-            </div>
-          ) : error ? (
-            <div style={{ display: 'flex', flexDirection: 'column', alignItems: 'center', justifyContent: 'center', height: '100%', gap: 8 }}>
-              <span style={{ color: '#dc2626' }}>{error}</span>
-            </div>
-          ) : (
-            <GisMap
-              nodesGeoJSON={nodes}
-              industriesGeoJSON={industries}
-              plumeLayer={plumeCone}
-              windVectorLayer={windVector}
-            />
-          )}
+
+        <div style={{ display: 'flex', gap: '8px' }}>
+          <button
+            onClick={() => setViewMode(viewMode === 'blueprint' ? 'gis' : 'blueprint')}
+            style={{
+              background: '#0d7778',
+              color: '#ffffff',
+              border: 'none',
+              padding: '8px 14px',
+              fontSize: '11px',
+              fontWeight: 700,
+              cursor: 'pointer',
+            }}
+          >
+            Switch to {viewMode === 'blueprint' ? 'Regional GIS Map' : 'Facility Blueprint'}
+          </button>
         </div>
       </div>
 
-      {/* ---- RIGHT: Incident Dossier Panel ---- */}
-      <div className="w-full md:w-[460px] overflow-y-auto bg-[#fffff0] flex-shrink-0">
-        {/* Active Alert Banner */}
-        {activeEvent && (
-          <div style={{
-            background: activeEvent.severity === 'normal' ? '#f0fdf4' : '#fef2f2',
-            borderBottom: `2px solid ${SEVERITY_COLORS[activeEvent.severity] || '#dc2626'}`,
-            padding: '8px 16px',
-            display: 'flex', alignItems: 'center', gap: 8,
-          }}>
-            <span
-              className="severity-pulse"
-              style={{
-                display: 'inline-block', width: 8, height: 8,
-                background: SEVERITY_COLORS[activeEvent.severity] || '#dc2626',
-              }}
-            />
-            <span style={{ fontSize: '11px', fontWeight: 700, textTransform: 'uppercase', letterSpacing: '0.5px' }}>
-              {activeEvent.severity.toUpperCase()} — {activeEvent.village_name}
-            </span>
-            <span style={{ marginLeft: 'auto', fontSize: '10px', fontFamily: 'var(--font-mono)', color: '#71717a' }}>
-              {new Date(activeEvent.detected_at).toLocaleTimeString('en-IN')} IST
-            </span>
+      {/* Dense 4-Metric Summary Row (From Mockup) */}
+      <div style={{ display: 'grid', gridTemplateColumns: 'repeat(4, minmax(0, 1fr))', gap: '12px', marginBottom: '16px' }}>
+        <div style={{ background: '#ffffff', border: '1px solid #e4e4e7', padding: '14px 16px' }}>
+          <div style={{ fontSize: '11px', color: '#71717a' }}>PM2.5 • {selectedNodeId}</div>
+          <div style={{ fontSize: '28px', fontWeight: 800, fontFamily: 'var(--font-mono)', margin: '4px 0 2px', color: '#dc2626' }}>
+            {readings.find((r) => r.label === 'PM2.5')?.value ?? '84.6'} <small style={{ fontSize: '11px', fontWeight: 400 }}>µg/m³</small>
           </div>
-        )}
+          <div style={{ fontSize: '11px', color: '#dc2626', fontWeight: 600 }}>↑ 2.4× baseline</div>
+        </div>
 
-        {/* Telemetry Section */}
-        <div style={{ padding: '14px 16px', borderBottom: '1px solid #e4e4e7' }}>
-          <div style={{
-            fontSize: '11px', fontWeight: 700, textTransform: 'uppercase',
-            letterSpacing: '0.8px', color: '#71717a', marginBottom: 10,
-            display: 'flex', justifyContent: 'space-between',
-          }}>
-            <span>{t('telemetryTitle')}</span>
-            {activeEvent?.peak_pm25 && (
-              <span style={{ color: '#dc2626' }}>
-                {Math.round((activeEvent.peak_pm25 / CPCB_LIMITS.pm25) * 100)}% OF CPCB LIMIT
-              </span>
+        <div style={{ background: '#ffffff', border: '1px solid #e4e4e7', padding: '14px 16px' }}>
+          <div style={{ fontSize: '11px', color: '#71717a' }}>SO₂ • {selectedNodeId}</div>
+          <div style={{ fontSize: '28px', fontWeight: 800, fontFamily: 'var(--font-mono)', margin: '4px 0 2px', color: '#d97706' }}>
+            {readings.find((r) => r.label === 'SO₂')?.value ?? '42.7'} <small style={{ fontSize: '11px', fontWeight: 400 }}>µg/m³</small>
+          </div>
+          <div style={{ fontSize: '11px', color: '#d97706', fontWeight: 600 }}>↑ 1.8× baseline</div>
+        </div>
+
+        <div style={{ background: '#ffffff', border: '1px solid #e4e4e7', padding: '14px 16px' }}>
+          <div style={{ fontSize: '11px', color: '#71717a' }}>Temperature • Ambient</div>
+          <div style={{ fontSize: '28px', fontWeight: 800, fontFamily: 'var(--font-mono)', margin: '4px 0 2px', color: '#09090b' }}>
+            {readings.find((r) => r.label === 'Temperature')?.value ?? '29.4'} <small style={{ fontSize: '11px', fontWeight: 400 }}>°C</small>
+          </div>
+          <div style={{ fontSize: '11px', color: '#16a34a', fontWeight: 600 }}>Stable</div>
+        </div>
+
+        <div style={{ background: '#ffffff', border: '1px solid #e4e4e7', padding: '14px 16px' }}>
+          <div style={{ fontSize: '11px', color: '#71717a' }}>Relative Humidity</div>
+          <div style={{ fontSize: '28px', fontWeight: 800, fontFamily: 'var(--font-mono)', margin: '4px 0 2px', color: '#09090b' }}>
+            {readings.find((r) => r.label === 'Humidity')?.value ?? '71'} <small style={{ fontSize: '11px', fontWeight: 400 }}>%</small>
+          </div>
+          <div style={{ fontSize: '11px', color: '#16a34a', fontWeight: 600 }}>Stable</div>
+        </div>
+      </div>
+
+      {/* Main Content Area: Map / Blueprint + Detail Panel */}
+      <div style={{ display: 'grid', gridTemplateColumns: 'minmax(0, 1fr) 360px', gap: '16px', minHeight: '600px' }}>
+        {/* Left Map Container */}
+        <div style={{ background: '#ffffff', border: '1px solid #e4e4e7', display: 'flex', flexDirection: 'column' }}>
+          {/* Header toolbar */}
+          <div
+            style={{
+              padding: '10px 16px',
+              borderBottom: '1px solid #e4e4e7',
+              display: 'flex',
+              justifyContent: 'space-between',
+              alignItems: 'center',
+              background: '#fcfcfc',
+            }}
+          >
+            <div>
+              <strong style={{ fontSize: '12px', textTransform: 'uppercase', letterSpacing: '0.5px' }}>
+                {viewMode === 'blueprint' ? 'Facility Blueprint — Ankleshwar Plant' : 'Regional PostGIS Sensory Network'}
+              </strong>
+              <div style={{ fontSize: '10px', color: '#71717a' }}>
+                {viewMode === 'blueprint'
+                  ? 'ANK-001 • 6 installed nodes • 5 operational zones'
+                  : '20 Active Monitoring Stations • 14 Attributed Industrial Units'}
+              </div>
+            </div>
+
+            <div style={{ display: 'flex', gap: '6px' }}>
+              <button
+                onClick={() => setViewMode(viewMode === 'blueprint' ? 'gis' : 'blueprint')}
+                style={{
+                  background: '#ffffff',
+                  border: '1px solid #d4d4d8',
+                  padding: '5px 10px',
+                  fontSize: '11px',
+                  fontWeight: 600,
+                  cursor: 'pointer',
+                }}
+              >
+                {viewMode === 'blueprint' ? 'View Regional GIS Map' : 'View Facility Blueprint'}
+              </button>
+              <button
+                onClick={() => router.push(`/${locale}/admin/blueprint`)}
+                style={{
+                  background: '#ffffff',
+                  border: '1px solid #d4d4d8',
+                  padding: '5px 10px',
+                  fontSize: '11px',
+                  fontWeight: 600,
+                  cursor: 'pointer',
+                }}
+              >
+                Edit Layout
+              </button>
+            </div>
+          </div>
+
+          {/* Interactive Workspace */}
+          <div style={{ flex: 1, position: 'relative', minHeight: '560px' }}>
+            {viewMode === 'blueprint' ? (
+              <FacilityBlueprint selectedPinId={selectedNodeId} onSelectPin={handleSelectBlueprintPin} />
+            ) : (
+              <GisMap
+                nodesGeoJSON={nodes}
+                industriesGeoJSON={industries}
+                plumeLayer={plumeCone}
+                windVectorLayer={windVector}
+                onNodeClick={handleSelectGisNode}
+              />
             )}
-          </div>
-
-          <div style={{ display: 'grid', gridTemplateColumns: '1fr 1fr', gap: 8 }}>
-            {[
-              {
-                label: 'PM2.5 Concentration',
-                value: activeEvent?.peak_pm25,
-                unit: 'µg/m³',
-                limit: CPCB_LIMITS.pm25,
-                sub: `CPCB 24h Limit: ${CPCB_LIMITS.pm25}`,
-              },
-              {
-                label: 'PM10 Respirable Dust',
-                value: activeEvent?.peak_pm10 ?? null,
-                unit: 'µg/m³',
-                limit: 100,
-                sub: 'CPCB 24h Benchmark: 100',
-              },
-              {
-                label: 'SO2 Toxic Gas',
-                value: activeEvent?.peak_so2,
-                unit: 'µg/m³',
-                limit: CPCB_LIMITS.so2,
-                sub: `CPCB Limit: ${CPCB_LIMITS.so2}`,
-              },
-              {
-                label: 'NOx Oxides',
-                value: activeEvent?.peak_nox ?? null,
-                unit: 'µg/m³',
-                limit: 80,
-                sub: 'NOx Trigger Band: 80',
-              },
-              {
-                label: 'NO2 Nitrogen Dioxide',
-                value: activeEvent?.peak_no2 ?? null,
-                unit: 'µg/m³',
-                limit: 80,
-                sub: 'NO2 Benchmark: 80',
-              },
-              {
-                label: 'CO Carbon Monoxide',
-                value: activeEvent?.peak_co ?? null,
-                unit: 'ppm',
-                limit: 2,
-                sub: 'Short-term threshold: 2',
-              },
-              {
-                label: 'CO₂ Ambient Level',
-                value: activeEvent?.peak_co2 ?? null,
-                unit: 'ppm',
-                limit: 500,
-                sub: 'Baseline reference: 500',
-              },
-            ].map((metric) => {
-              const isCritical = metric.value != null && metric.value > metric.limit;
-              return (
-                <div
-                  key={metric.label}
-                  style={{
-                    border: `1px solid ${isCritical ? '#dc2626' : '#e4e4e7'}`,
-                    background: isCritical ? '#fef2f2' : '#f8fafc',
-                    padding: '8px 10px',
-                  }}
-                >
-                  <div style={{ fontSize: '10px', color: '#71717a', textTransform: 'uppercase' }}>{metric.label}</div>
-                  <div style={{
-                    fontSize: '20px', fontWeight: 600, fontFamily: 'var(--font-mono)',
-                    color: isCritical ? '#dc2626' : '#000', marginTop: 2,
-                  }}>
-                    {metric.value != null ? metric.value.toFixed(1) : '—'}
-                    <small style={{ fontSize: '11px', fontWeight: 400 }}> {metric.unit}</small>
-                  </div>
-                  <div style={{ fontSize: '10px', color: '#a1a1aa' }}>{metric.sub}</div>
-                </div>
-              );
-            })}
           </div>
         </div>
 
-        {/* No active incident fallback */}
-        {!activeEvent && !loading && (
-          <div style={{ padding: '24px 16px', color: '#71717a', fontSize: '13px' }}>
-            {t('noActiveIncident')}
-          </div>
-        )}
+        {/* Right Detail Panel */}
+        <div style={{ background: '#ffffff', border: '1px solid #e4e4e7' }}>
+          <NodeDetailPanel
+            nodeId={selectedNodeId}
+            nodeName={selectedNodeName}
+            zone={selectedZone}
+            status={nodeStatus}
+            readings={readings}
+            activeEvent={activeEvent}
+          />
+        </div>
       </div>
     </div>
   );

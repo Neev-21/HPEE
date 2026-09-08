@@ -1,0 +1,5 @@
+# HPEE Scenario Soundboard (Presenter Remote)
+
+
+# 🎮 HPEE Stage Remote
+Tap a soundboard pad to inject telemetry live to laptop

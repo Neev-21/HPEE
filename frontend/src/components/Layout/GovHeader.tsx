@@ -5,6 +5,7 @@ import { usePathname, useRouter } from 'next/navigation';
 import { useParams } from 'next/navigation';
 import Link from 'next/link';
 import { getCurrentUser, logout } from '@/lib/auth';
+import { appStore, MasterIdentity } from '@/lib/store';
 import { useEffect, useState } from 'react';
 import type { GpcbUser } from '@/lib/auth';
 
@@ -22,16 +23,35 @@ export default function GovHeader() {
   const params = useParams();
   const locale = (params?.locale as string) || 'en';
   const [user, setUser] = useState<GpcbUser | null>(null);
+  const [master, setMaster] = useState<MasterIdentity>({
+    companyName: 'Apex Chemicals',
+    brandName: 'EcoPlant Intelligence',
+    companyId: 'AC-001',
+    plantId: 'ANK-001',
+    plantName: 'Ankleshwar Plant',
+    city: 'Ankleshwar',
+    state: '',
+    address: 'Industrial Estate, Ankleshwar',
+    timezone: 'Asia/Kolkata (IST)',
+    defaultDisplay: 'Main Plant LCD',
+  });
 
   useEffect(() => {
     const timer = setTimeout(() => {
       setUser(getCurrentUser());
     }, 0);
-    return () => clearTimeout(timer);
+    setMaster(appStore.getMaster());
+
+    const unsub = appStore.subscribe(() => {
+      setMaster(appStore.getMaster());
+    });
+    return () => {
+      clearTimeout(timer);
+      unsub();
+    };
   }, []);
 
   function switchLocale(newLocale: string) {
-    // Replace the locale segment in the current path
     const segments = pathname.split('/');
     segments[1] = newLocale;
     router.push(segments.join('/'));
@@ -42,103 +62,199 @@ export default function GovHeader() {
     router.push(`/${locale}/login`);
   }
 
-  // Build nav items with active detection
-  const navItems = [
-    { href: `/${locale}`, label: tNav('overview'), key: 'overview' },
-    { href: `/${locale}/incidents`, label: tNav('incidents'), key: 'incidents' },
-    { href: `/${locale}/stations`, label: tNav('stations'), key: 'stations' },
-    { href: `/${locale}/compliance`, label: tNav('compliance'), key: 'compliance' },
-    { href: `/${locale}/reports`, label: tNav('reports'), key: 'reports' },
+  // Complete mockup navigation strip with tags
+  const navItems: { href: string; label: string; key: string; tag?: string; tagColor?: string }[] = [
+    { href: `/${locale}`, label: 'Overview', key: 'overview' },
+    { href: `/${locale}/incidents`, label: 'Current Events', key: 'incidents' },
+    { href: `/${locale}/network`, label: 'Sensor Network', key: 'network' },
+    { href: `/${locale}/stations`, label: 'Stations', key: 'stations' },
+    { href: `/${locale}/reports`, label: 'Reports', key: 'reports' },
+    { href: `/${locale}/kiosk`, label: 'Plant Display', key: 'kiosk', tag: 'ADMIN' },
+    { href: `/${locale}/admin/sensors`, label: 'Sensor Config', key: 'sensors', tag: 'ADMIN' },
+    { href: `/${locale}/admin/blueprint`, label: 'Blueprint Editor', key: 'blueprint', tag: 'ADMIN' },
+    { href: `/${locale}/admin/builder`, label: 'Dashboard Builder', key: 'builder', tag: 'ADMIN' },
+    { href: `/${locale}/admin/visual-metrics`, label: 'Visual Metrics', key: 'visual', tag: 'ADMIN' },
+    { href: `/${locale}/admin/master`, label: 'Master Editor', key: 'master', tag: 'MASTER', tagColor: '#d79b2b' },
+    { href: `/${locale}/admin/wizard`, label: 'Setup Wizard', key: 'wizard' },
   ];
 
   return (
     <>
-      {/* GOV.UK style top black banner */}
-      <div style={{
-        background: '#000',
-        color: '#fff',
-        padding: '3px 16px',
-        fontSize: '11px',
-        letterSpacing: '0.4px',
-        display: 'flex',
-        justifyContent: 'space-between',
-      }}>
+      {/* GOV.UK style top black regulatory banner */}
+      <div
+        style={{
+          background: '#000000',
+          color: '#ffffff',
+          padding: '4px 20px',
+          fontSize: '11px',
+          letterSpacing: '0.4px',
+          display: 'flex',
+          justifyContent: 'space-between',
+          alignItems: 'center',
+          fontFamily: 'Public Sans, sans-serif',
+        }}
+      >
         <span>{t('govBanner')}</span>
-        <span>DATA CLASSIFICATION: OFFICIAL USE ONLY</span>
+        <span style={{ fontSize: '10px', color: '#a0b0b5', fontFamily: 'IBM Plex Mono, monospace' }}>
+          DATA CLASSIFICATION: OFFICIAL REGULATORY USE ONLY
+        </span>
       </div>
 
-      {/* Main header */}
-      <header className="bg-[#fffff0] border-b-[3px] border-stone-300 p-3 md:px-4 flex flex-col md:flex-row justify-between items-center gap-4">
-        {/* Branding */}
-        <div className="flex items-center gap-3">
-          {/* GPCB Emblem placeholder */}
-          <div className="w-9 h-11 bg-[#2c2c2c] text-[#fffff0] flex items-center justify-center text-[9px] font-bold text-center leading-[1.2] p-1 shrink-0 rounded-sm">
-            GPCB<br />GOG
-          </div>
-          <div>
-            <h1 className="text-base font-bold uppercase tracking-wide leading-[1.2] m-0 text-[#2c2c2c]">
-              {t('title')}
-            </h1>
-            <p className="text-[11px] text-stone-500 m-0">
-              {t('subtitle')}
-            </p>
-          </div>
+      {/* Main Console Top Bar */}
+      <div
+        style={{
+          height: '68px',
+          background: '#10282d',
+          color: '#ffffff',
+          display: 'flex',
+          alignItems: 'center',
+          justifyContent: 'space-between',
+          padding: '0 24px',
+          fontFamily: 'Public Sans, sans-serif',
+        }}
+      >
+        <div style={{ display: 'flex', alignItems: 'center', gap: '12px' }}>
+          <span
+            style={{
+              fontSize: '20px',
+              fontWeight: 900,
+              letterSpacing: '-0.02em',
+              color: '#ffffff',
+            }}
+          >
+            {master.companyName || 'Apex Chemicals'}
+          </span>
+          <span style={{ opacity: 0.35, fontSize: '18px' }}>×</span>
+          <span
+            style={{
+              fontSize: '14px',
+              opacity: 0.85,
+              fontWeight: 500,
+              color: '#dff1ef',
+            }}
+          >
+            {master.brandName || 'EcoPlant Intelligence'} • Regulatory Monitoring Console
+          </span>
         </div>
 
-        {/* Right side: lang switcher + user */}
-        <div className="flex items-center gap-3">
-          {/* Language switcher */}
-          <div className="flex border border-[#2c2c2c] rounded-md overflow-hidden">
+        <div style={{ display: 'flex', gap: '12px', alignItems: 'center' }}>
+          {/* Live Indicator */}
+          <div
+            style={{
+              background: 'rgba(255, 255, 255, 0.08)',
+              padding: '7px 14px',
+              fontSize: '11px',
+              fontWeight: 800,
+              display: 'flex',
+              alignItems: 'center',
+              gap: '8px',
+              letterSpacing: '0.6px',
+            }}
+          >
+            <span
+              style={{
+                display: 'inline-block',
+                width: '7px',
+                height: '7px',
+                background: '#52d3a1',
+                borderRadius: '50%',
+                boxShadow: '0 0 8px #52d3a1',
+              }}
+            />
+            LIVE MONITORING
+          </div>
+
+          {/* User Role Pill */}
+          <div
+            style={{
+              padding: '7px 12px',
+              background: 'rgba(255, 255, 255, 0.1)',
+              fontSize: '11px',
+              fontWeight: 700,
+              color: '#e6f4f1',
+            }}
+          >
+            {user ? user.name : 'Plant Manager • Admin'}
+          </div>
+
+          {/* Language Switcher */}
+          <div style={{ display: 'flex', border: '1px solid rgba(255,255,255,0.2)' }}>
             {LOCALES.map((loc) => (
               <button
                 key={loc.code}
                 onClick={() => switchLocale(loc.code)}
-                className={`px-3 py-1.5 text-[11px] font-semibold cursor-pointer border-r last:border-r-0 border-[#2c2c2c] ${
-                  locale === loc.code ? 'bg-[#2c2c2c] text-[#fffff0]' : 'bg-[#fffff0] text-[#2c2c2c]'
-                }`}
+                style={{
+                  padding: '5px 10px',
+                  fontSize: '11px',
+                  fontWeight: 700,
+                  cursor: 'pointer',
+                  border: 'none',
+                  background: locale === loc.code ? '#0d7778' : 'transparent',
+                  color: '#ffffff',
+                }}
               >
                 {loc.label}
               </button>
             ))}
           </div>
-
-          {/* User pill or Login */}
-          {user ? (
-            <div className="flex items-center gap-2">
-              <span className="text-[11px] font-mono text-stone-600 hidden md:inline-block">
-                {user.role.toUpperCase()} / {user.name.toUpperCase()}
-              </span>
-              <button
-                onClick={handleLogout}
-                className="bg-[#2c2c2c] text-[#fffff0] px-3 py-1.5 text-[11px] font-semibold rounded-md hover:bg-black"
-              >
-                {tNav('logout')}
-              </button>
-            </div>
-          ) : (
-            <Link
-              href={`/${locale}/login`}
-              className="bg-[#2c2c2c] text-[#fffff0] px-3 py-1.5 text-[11px] font-semibold rounded-md hover:bg-black no-underline"
-            >
-              LOGIN
-            </Link>
-          )}
         </div>
-      </header>
+      </div>
 
-      {/* Navigation strip */}
-      <nav className="bg-[#fdfbf7] border-b border-stone-200 px-4 flex items-center overflow-x-auto whitespace-nowrap scrollbar-hide">
+      {/* Navigation Strip */}
+      <nav
+        style={{
+          background: '#ffffff',
+          borderBottom: '1px solid #dce5e7',
+          display: 'flex',
+          gap: '2px',
+          padding: '4px 20px',
+          overflowX: 'auto',
+          scrollbarWidth: 'thin',
+          fontFamily: 'Public Sans, sans-serif',
+        }}
+      >
         {navItems.map((item) => {
           const isActive = pathname === item.href || (item.key === 'overview' && pathname === `/${locale}`);
           return (
             <Link
               key={item.key}
               href={item.href}
-              className={`inline-block px-4 py-3 text-[13px] font-bold tracking-wide no-underline ${
-                isActive ? 'text-[#2c2c2c] border-b-[3px] border-[#2c2c2c]' : 'text-stone-500 border-b-[3px] border-transparent hover:text-stone-800'
-              }`}
+              style={{
+                border: 'none',
+                background: isActive ? '#dff1ef' : 'transparent',
+                color: isActive ? '#0d7778' : '#5e7077',
+                fontWeight: 800,
+                fontSize: '12px',
+                padding: '9px 12px',
+                textDecoration: 'none',
+                whiteSpace: 'nowrap',
+                letterSpacing: '0.2px',
+                display: 'flex',
+                alignItems: 'center',
+                gap: '4px',
+              }}
             >
-              {item.label}
+              <span>{(() => {
+                try {
+                  return tNav(item.key as any);
+                } catch {
+                  return item.label;
+                }
+              })()}</span>
+              {item.tag && (
+                <span
+                  style={{
+                    fontSize: '8px',
+                    fontWeight: 900,
+                    background: item.tagColor ? 'rgba(215,155,43,0.15)' : '#edf2f3',
+                    color: item.tagColor ? item.tagColor : '#718087',
+                    padding: '2px 5px',
+                    letterSpacing: '0.05em',
+                  }}
+                >
+                  {item.tag}
+                </span>
+              )}
             </Link>
           );
         })}
