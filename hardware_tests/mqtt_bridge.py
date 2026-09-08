@@ -24,7 +24,11 @@ def main():
     parser.add_argument("--baud", type=int, default=9600, help="Baud rate")
     parser.add_argument("--broker", type=str, default="127.0.0.1", help="MQTT Broker IP")
     parser.add_argument("--mqtt-port", type=int, default=1884, help="MQTT Broker Port")
+    parser.add_argument("--api-url", type=str, default="http://127.0.0.1:8100/api/v1/kiosk/reading", help="Direct API endpoint for Plant Display")
     args = parser.parse_args()
+
+    # Import urllib for direct HTTP API sync
+    import urllib.request
 
     # 1. Initialize MQTT Client
     mqtt_client = mqtt.Client(client_id="HPEE_Serial_Bridge")
@@ -34,8 +38,7 @@ def main():
     try:
         mqtt_client.connect(args.broker, args.mqtt_port, 60)
     except Exception as e:
-        print(f"[Error] Failed to connect to MQTT broker: {e}")
-        sys.exit(1)
+        print(f"[Warn] MQTT broker not reached ({e}). Bridge will still push directly to API.")
 
     # Run the MQTT loop in the background
     mqtt_client.loop_start()
@@ -64,7 +67,24 @@ def main():
                 if ":" in line:
                     try:
                         topic, payload = line.split(":", 1)
-                        mqtt_client.publish(topic, payload)
+                        # 1. Publish to Mosquitto
+                        try:
+                            mqtt_client.publish(topic, payload)
+                        except Exception:
+                            pass
+
+                        # 2. Direct HTTP sync to FastAPI Kiosk API
+                        try:
+                            req = urllib.request.Request(
+                                args.api_url,
+                                data=payload.encode('utf-8'),
+                                headers={"Content-Type": "application/json"}
+                            )
+                            with urllib.request.urlopen(req, timeout=1) as resp:
+                                pass
+                        except Exception:
+                            pass
+
                         print(f"[FORWARDED] Topic: {topic} | Payload: {payload}")
                     except ValueError:
                         print(f"[WARN] Malformed string from serial: {line}")

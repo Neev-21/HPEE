@@ -57,7 +57,32 @@ export default function KioskPage() {
       }
     }).catch(() => {});
 
-    // Subscribe to live telemetry and alerts from WebSocket
+    // 1. High-frequency 1-second polling to ensure live updates even if WebSocket is blocked
+    const fetchLatestTelemetry = async () => {
+      try {
+        const res = await fetch('/api/v1/kiosk/latest');
+        if (res.ok) {
+          const data = await res.json();
+          setLiveMetrics((prev) => ({
+            ...prev,
+            pm25: data.pm25 != null ? Number(data.pm25) : prev.pm25,
+            so2: data.so2 != null ? Number(data.so2) : prev.so2,
+            temperature: data.temperature != null ? Number(data.temperature) : prev.temperature,
+            humidity: data.humidity != null ? Number(data.humidity) : prev.humidity,
+            windSpeed: data.wind_speed != null ? Number(data.wind_speed) : prev.windSpeed,
+            activeNodeId: data.node_id || prev.activeNodeId,
+            onlineCount: data.online_nodes || prev.onlineCount,
+          }));
+        }
+      } catch (err) {
+        // Fallback silently if API is warming up
+      }
+    };
+
+    fetchLatestTelemetry();
+    const pollInterval = setInterval(fetchLatestTelemetry, 1000);
+
+    // 2. Real-time WebSocket listener
     const unsubWs = liveSocket.subscribe((msg) => {
       if (msg.type === 'TELEMETRY_UPDATE') {
         setLiveMetrics((prev) => ({
@@ -78,6 +103,7 @@ export default function KioskPage() {
     return () => {
       unsub();
       unsubWs();
+      clearInterval(pollInterval);
     };
   }, []);
 
@@ -240,6 +266,35 @@ export default function KioskPage() {
               } catch(e) { setTimeout(connect, 5000); }
             }
             connect();
+
+            // 1-second fallback poll in popup
+            setInterval(function() {
+              fetch('/api/v1/kiosk/latest')
+                .then(function(r) { return r.json(); })
+                .then(function(data) {
+                  if (data.pm25 != null) {
+                    var el = document.getElementById('kiosk-pm25');
+                    if (el) el.innerText = Number(data.pm25).toFixed(1);
+                  }
+                  if (data.so2 != null) {
+                    var el = document.getElementById('kiosk-so2');
+                    if (el) el.innerText = Number(data.so2).toFixed(1);
+                  }
+                  if (data.temperature != null) {
+                    var el = document.getElementById('kiosk-temp');
+                    if (el) el.innerText = Number(data.temperature).toFixed(1);
+                  }
+                  if (data.humidity != null) {
+                    var el = document.getElementById('kiosk-hum');
+                    if (el) el.innerText = Math.round(Number(data.humidity));
+                  }
+                  if (data.wind_speed != null) {
+                    var el = document.getElementById('kiosk-wind');
+                    if (el) el.innerText = Number(data.wind_speed).toFixed(1);
+                  }
+                })
+                .catch(function() {});
+            }, 1000);
           })();
         </script>
       </body>

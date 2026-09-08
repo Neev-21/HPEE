@@ -301,10 +301,11 @@ def ingest_telemetry(payload: TelemetryIngestRequest, background_tasks: Backgrou
     # Trigger Event Detection asynchronously
     background_tasks.add_task(trigger_event_detection, reading.reading_id, reading.node_id)
 
-    # Broadcast telemetry update to WebSocket clients
+    # Broadcast telemetry update to WebSocket clients and sync with Kiosk store
     from backend.app.core.websocket import manager
-    manager.broadcast_sync({
-        "type": "TELEMETRY_UPDATE",
+    from backend.app.api.v1.kiosk import kiosk_store
+
+    telemetry_payload = {
         "node_id": reading.node_id,
         "pm25": pm25_val,
         "pm10": pm10_val,
@@ -318,7 +319,10 @@ def ingest_telemetry(payload: TelemetryIngestRequest, background_tasks: Backgrou
         "wind_speed": ws_val,
         "wind_direction": wd_val,
         "timestamp": reading.recorded_at.isoformat() if reading.recorded_at else None
-    })
+    }
+    
+    # Keep Kiosk live store in sync
+    kiosk_store.update(telemetry_payload)
 
     return TelemetryIngestResponse(
         status="success",

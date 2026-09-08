@@ -74,7 +74,7 @@ void loop() {
   // 1. Potentiometer (mapped to wind speed / direction dial for live testing)
   int potValue = getAveragedAnalog(POT_PIN);
   float windSpeed = (potValue / 1023.0) * 25.0; // 0 - 25 m/s
-  float windDir = (potValue / 1023.0) * 360.0;   // 0 - 360 deg
+  float windDir = (potValue / 1023.0) * 359.0;   // 0 - 359 deg (strictly < 360)
 
   // 2. MQ-2 Smoke/Gas Sensor (Higher value = More Gas/Smoke, mapped to SO2 range)
   int mq2Raw = getAveragedAnalog(MQ2_PIN);
@@ -96,7 +96,7 @@ void loop() {
   // Map dust ADC reading to PM2.5 (0 - 500 ug/m3)
   float pm25 = (dustRaw / 1023.0) * 500.0;
 
-  // 5. DHT11 Temperature & Humidity
+  // 5. DHT11 Temperature & Humidity=
   byte temperature = 0, humidity = 0;
   bool dhtSuccess = readDHT11(temperature, humidity);
 

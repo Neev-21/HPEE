@@ -8,6 +8,7 @@ from backend.app.api.v1.complaints import router as complaints_router
 from backend.app.api.v1.notifications import router as notifications_router
 from backend.app.api.v1.ws import router as ws_router
 from backend.app.api.v1.events import router as events_router
+from backend.app.api.v1.kiosk import router as kiosk_router
 from backend.app.core.websocket import manager
 
 @asynccontextmanager
@@ -32,6 +33,7 @@ app.add_middleware(
         "http://127.0.0.1:3100",
         "http://localhost:3000",
         "http://127.0.0.1:3000",
+        "*"
     ],
     allow_credentials=True,
     allow_methods=["*"],
@@ -39,6 +41,7 @@ app.add_middleware(
 )
 
 app.include_router(telemetry_router, prefix="/api/v1/sensor", tags=["sensor"])
+app.include_router(kiosk_router, prefix="/api/v1/kiosk", tags=["kiosk"])
 app.include_router(gis_router, prefix="/api/v1/gis", tags=["gis"])
 app.include_router(complaints_router, prefix="/api/v1/complaints", tags=["complaints"])
 app.include_router(notifications_router, prefix="/api/v1/notifications", tags=["notifications"])
