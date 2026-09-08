@@ -1,0 +1,24 @@
+---
+import AppLayout from '../../../layouts/AppLayout.astro';
+import { DashboardConfigPanel } from '../../../components/react/dashboard/DashboardConfigPanel';
+
+export function getStaticPaths() {
+  return [{ params: { facilityId: 'demo' } }];
+}
+
+const { facilityId } = Astro.params;
+---
+
+<AppLayout title="Dashboard Config | HPEE">
+  <div class="mb-6">
+    <h1 class="text-2xl font-bold text-slate-900">Dashboard Configuration</h1>
+  <div class="mb-4">
+    <h1 class="text-2xl font-bold text-slate-900">Operator Dashboard Configuration</h1>
+    <p class="text-sm text-slate-500 mt-0.5">Customize real-time monitoring telemetry widgets, order, and size allocation.</p>
+  </div>
+  
+  <div class="bg-white p-6 rounded-xl border border-slate-200 shadow-sm min-h-[400px]">
+    <p class="text-slate-500 italic">&lt;DashboardConfigPanel client:load facilityId="{facilityId}" /&gt; would be mounted here.</p>
+  </div>
+  <DashboardConfigPanel client:load facilityId={facilityId} />
+</AppLayout>

@@ -1,0 +1,52 @@
+---
+import AppLayout from '../layouts/AppLayout.astro';
+import { Rocket, Building2 } from 'lucide-react';
+---
+
+<AppLayout title="HPEE - B2B Facility Configuration">
+  <div class="max-w-5xl mx-auto py-12 px-4 sm:px-6 lg:px-8">
+    <div class="text-center mb-16">
+      <h1 class="text-5xl font-bold text-slate-900 tracking-tight mb-4">HPEE</h1>
+      <h2 class="text-2xl font-semibold text-slate-700 mb-4">Hyperlocal Pollution Evidence Engine</h2>
+      <p class="text-lg text-slate-500 max-w-2xl mx-auto">
+        B2B Facility Configuration Platform
+      </p>
+    </div>
+
+    <div class="grid grid-cols-1 md:grid-cols-2 gap-8 mb-16">
+      <a href="/setup" class="flex flex-col items-center justify-center p-8 bg-white border border-slate-200 rounded-xl shadow-sm hover:shadow-md transition-shadow group">
+        <div class="w-16 h-16 bg-blue-50 rounded-full flex items-center justify-center mb-4 group-hover:scale-110 transition-transform">
+          <Rocket className="w-8 h-8 text-blue-600" />
+        </div>
+        <h3 class="text-xl font-bold text-slate-900 mb-2">Start Setup Wizard</h3>
+        <p class="text-slate-500 text-center">Configure a new facility from scratch with our step-by-step guide.</p>
+      </a>
+
+      <a href="/facility/demo/sensors" class="flex flex-col items-center justify-center p-8 bg-white border border-slate-200 rounded-xl shadow-sm hover:shadow-md transition-shadow group">
+        <div class="w-16 h-16 bg-green-50 rounded-full flex items-center justify-center mb-4 group-hover:scale-110 transition-transform">
+          <Building2 className="w-8 h-8 text-green-600" />
+        </div>
+        <h3 class="text-xl font-bold text-slate-900 mb-2">Demo Facility</h3>
+        <p class="text-slate-500 text-center">Explore a pre-configured facility with mock data and settings.</p>
+      </a>
+    </div>
+
+    <div class="bg-slate-50 rounded-xl p-8">
+      <h3 class="text-lg font-semibold text-slate-900 mb-4 text-center">Platform Features</h3>
+      <div class="grid grid-cols-2 md:grid-cols-4 gap-4 text-center">
+        <div class="p-4 bg-white rounded-lg shadow-sm">
+          <span class="font-medium text-slate-700">Sensor Configuration</span>
+        </div>
+        <div class="p-4 bg-white rounded-lg shadow-sm">
+          <span class="font-medium text-slate-700">Blueprint Editor</span>
+        </div>
+        <div class="p-4 bg-white rounded-lg shadow-sm">
+          <span class="font-medium text-slate-700">Plant Display</span>
+        </div>
+        <div class="p-4 bg-white rounded-lg shadow-sm">
+          <span class="font-medium text-slate-700">Dashboard Customization</span>
+        </div>
+      </div>
+    </div>
+  </div>
+</AppLayout>

@@ -1,0 +1,52 @@
+---
+import AppLayout from '../../../layouts/AppLayout.astro';
+import { FacilityHeader } from '../../../components/react/facility/FacilityHeader';
+
+export function getStaticPaths() {
+  return [{ params: { facilityId: 'demo' } }];
+}
+
+const { facilityId } = Astro.params;
+---
+
+<AppLayout title="Facility Configuration | HPEE">
+  <FacilityHeader facilityName="Demo Facility" companyName="Acme Corp" client:load />
+  
+  <div class="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-6">
+    <a href={`/facility/${facilityId}/sensors`} class="p-6 bg-white border border-slate-200 rounded-xl shadow-sm hover:border-blue-300 hover:shadow-md transition-all group">
+      <h3 class="text-lg font-semibold text-slate-900 mb-2 group-hover:text-blue-600">Sensors</h3>
+      <p class="text-3xl font-bold text-slate-700">12</p>
+      <p class="text-sm text-slate-500 mt-2">Active sensors configured</p>
+    </a>
+    
+    <a href={`/facility/${facilityId}/blueprint`} class="p-6 bg-white border border-slate-200 rounded-xl shadow-sm hover:border-blue-300 hover:shadow-md transition-all group">
+      <h3 class="text-lg font-semibold text-slate-900 mb-2 group-hover:text-blue-600">Blueprint</h3>
+      <p class="text-sm font-medium text-green-600 bg-green-50 inline-block px-2 py-1 rounded">Uploaded</p>
+      <p class="text-sm text-slate-500 mt-2">Floor plan is active</p>
+    </a>
+    
+    <a href={`/facility/${facilityId}/dashboard-config`} class="p-6 bg-white border border-slate-200 rounded-xl shadow-sm hover:border-blue-300 hover:shadow-md transition-all group">
+      <h3 class="text-lg font-semibold text-slate-900 mb-2 group-hover:text-blue-600">Dashboard</h3>
+      <p class="text-sm font-medium text-green-600 bg-green-50 inline-block px-2 py-1 rounded">Configured</p>
+      <p class="text-sm text-slate-500 mt-2">Internal dashboard layout</p>
+    </a>
+    
+    <a href={`/facility/${facilityId}/display-config`} class="p-6 bg-white border border-slate-200 rounded-xl shadow-sm hover:border-blue-300 hover:shadow-md transition-all group">
+      <h3 class="text-lg font-semibold text-slate-900 mb-2 group-hover:text-blue-600">Plant Display</h3>
+      <p class="text-sm font-medium text-amber-600 bg-amber-50 inline-block px-2 py-1 rounded">Needs Review</p>
+      <p class="text-sm text-slate-500 mt-2">Public display screens</p>
+    </a>
+
+    <div class="p-6 bg-white border border-slate-200 rounded-xl shadow-sm">
+      <h3 class="text-lg font-semibold text-slate-900 mb-2">Zones</h3>
+      <p class="text-3xl font-bold text-slate-700">4</p>
+      <p class="text-sm text-slate-500 mt-2">Defined facility areas</p>
+    </div>
+
+    <div class="p-6 bg-white border border-slate-200 rounded-xl shadow-sm">
+      <h3 class="text-lg font-semibold text-slate-900 mb-2">Sensor Types</h3>
+      <p class="text-3xl font-bold text-slate-700">3</p>
+      <p class="text-sm text-slate-500 mt-2">Measurement templates</p>
+    </div>
+  </div>
+</AppLayout>

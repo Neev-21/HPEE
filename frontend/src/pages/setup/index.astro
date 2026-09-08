@@ -1,0 +1,14 @@
+---
+import AppLayout from '../../layouts/AppLayout.astro';
+import { SetupWizard } from '../../components/react/setup/SetupWizard';
+---
+
+<AppLayout title="Setup Wizard | HPEE">
+  <div class="py-8">
+    <div class="max-w-4xl mx-auto mb-8">
+      <h1 class="text-2xl font-bold text-slate-900">Facility Setup Wizard</h1>
+      <p class="text-slate-500 mt-1">Follow the steps below to fully configure your facility and environmental sensors.</p>
+    </div>
+    <SetupWizard client:load />
+  </div>
+</AppLayout>

@@ -1,0 +1,21 @@
+---
+import DisplayLayout from '../../../layouts/DisplayLayout.astro';
+import { PlantDisplay } from '../../../components/react/display/PlantDisplay';
+
+export function getStaticPaths() {
+  return [{ params: { facilityId: 'demo' } }];
+}
+
+const { facilityId } = Astro.params;
+---
+
+<DisplayLayout title="Plant Display | HPEE">
+  <div class="flex items-center justify-center w-full h-screen bg-slate-900 text-white">
+    <div class="text-center">
+      <h1 class="text-4xl font-bold mb-4">Plant Display Mode</h1>
+      <p class="text-xl text-slate-400">&lt;PlantDisplay client:load facilityId="{facilityId}" /&gt; would be mounted here.</p>
+    </div>
+  </div>
+<DisplayLayout title="Plant Big Display | HPEE">
+  <PlantDisplay client:load facilityId={facilityId} />
+</DisplayLayout>

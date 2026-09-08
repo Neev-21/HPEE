@@ -1,0 +1,35 @@
+---
+import AppLayout from '../../../layouts/AppLayout.astro';
+import { DisplayConfigPanel } from '../../../components/react/display/DisplayConfigPanel';
+
+export function getStaticPaths() {
+  return [{ params: { facilityId: 'demo' } }];
+}
+
+const { facilityId } = Astro.params;
+---
+
+<AppLayout title="Display Config | HPEE">
+  <div class="mb-6 flex justify-between items-center">
+    <h1 class="text-2xl font-bold text-slate-900">Plant Display Configuration</h1>
+    <a href={`/facility/${facilityId}/display`} target="_blank" class="px-4 py-2 bg-blue-600 text-white font-medium rounded hover:bg-blue-700 transition-colors">
+      Launch Display
+  <div class="mb-4 flex justify-between items-center">
+    <div>
+      <h1 class="text-2xl font-bold text-slate-900">Plant Big Display Configuration</h1>
+      <p class="text-sm text-slate-500 mt-0.5">Configure high-contrast wall TV monitors and control room display boards.</p>
+    </div>
+    <a
+      href={`/facility/${facilityId}/display`}
+      target="_blank"
+      class="inline-flex items-center gap-1.5 px-4 py-2 bg-blue-600 text-white text-sm font-medium rounded-md hover:bg-blue-700 transition"
+    >
+      Launch Fullscreen Mode ↗
+    </a>
+  </div>
+  
+  <div class="bg-white p-6 rounded-xl border border-slate-200 shadow-sm min-h-[400px]">
+    <p class="text-slate-500 italic">&lt;DisplayConfigPanel client:load facilityId="{facilityId}" /&gt; would be mounted here.</p>
+  </div>
+  <DisplayConfigPanel client:load facilityId={facilityId} />
+</AppLayout>

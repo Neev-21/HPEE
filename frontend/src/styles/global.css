@@ -1,0 +1,88 @@
+@import "tailwindcss";
+
+/* ─── Industrial Design Tokens ─── */
+@theme {
+  /* Base palette */
+  --color-slate-50: #f8fafc;
+  --color-slate-100: #f1f5f9;
+  --color-slate-200: #e2e8f0;
+  --color-slate-300: #cbd5e1;
+  --color-slate-400: #94a3b8;
+  --color-slate-500: #64748b;
+  --color-slate-600: #475569;
+  --color-slate-700: #334155;
+  --color-slate-800: #1e293b;
+  --color-slate-900: #0f172a;
+  --color-slate-950: #020617;
+
+  /* Status colors — meaningful, not decorative */
+  --color-status-normal: #16a34a;
+  --color-status-warning: #d97706;
+  --color-status-critical: #dc2626;
+  --color-status-offline: #6b7280;
+  --color-status-unknown: #9ca3af;
+
+  /* Industrial accent */
+  --color-industrial-primary: #3b82f6;
+  --color-industrial-secondary: #06b6d4;
+}
+
+/* ─── CSS Variables for component theming ─── */
+:root {
+  --background: 0 0% 100%;
+  --foreground: 222.2 84% 4.9%;
+  --card: 0 0% 100%;
+  --card-foreground: 222.2 84% 4.9%;
+  --popover: 0 0% 100%;
+  --popover-foreground: 222.2 84% 4.9%;
+  --primary: 222.2 47.4% 11.2%;
+  --primary-foreground: 210 40% 98%;
+  --secondary: 210 40% 96.1%;
+  --secondary-foreground: 222.2 47.4% 11.2%;
+  --muted: 210 40% 96.1%;
+  --muted-foreground: 215.4 16.3% 46.9%;
+  --accent: 210 40% 96.1%;
+  --accent-foreground: 222.2 47.4% 11.2%;
+  --destructive: 0 84.2% 60.2%;
+  --destructive-foreground: 210 40% 98%;
+  --border: 214.3 31.8% 91.4%;
+  --input: 214.3 31.8% 91.4%;
+  --ring: 222.2 84% 4.9%;
+  --radius: 0.375rem;
+}
+
+/* ─── Base styles ─── */
+@layer base {
+  * {
+    @apply border-slate-200;
+  }
+  body {
+    @apply bg-slate-50 text-slate-900 antialiased;
+    font-family: 'Inter', 'Public Sans', system-ui, -apple-system, sans-serif;
+  }
+  code, .font-mono {
+    font-family: 'IBM Plex Mono', 'JetBrains Mono', ui-monospace, monospace;
+  }
+}
+
+/* ─── Industrial focus states ─── */
+@layer components {
+  .focus-ring {
+    @apply focus:outline-none focus:ring-2 focus:ring-industrial-primary focus:ring-offset-2;
+  }
+  .status-badge {
+    @apply inline-flex items-center gap-1 px-2 py-0.5 text-xs font-medium rounded;
+  }
+  .status-badge-online {
+    @apply bg-green-100 text-green-800;
+  }
+  .status-badge-warning {
+    @apply bg-amber-100 text-amber-800;
+  }
+  .status-badge-critical {
+    @apply bg-red-100 text-red-800;
+  }
+  .status-badge-offline {
+    @apply bg-gray-100 text-gray-600;
+  }
+}

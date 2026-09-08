@@ -1,0 +1,36 @@
+---
+import AppLayout from '../../../layouts/AppLayout.astro';
+import { SensorConfigurator } from '../../../components/react/sensors/SensorConfigurator';
+
+export function getStaticPaths() {
+  return [{ params: { facilityId: 'demo' } }];
+}
+
+const { facilityId } = Astro.params;
+---
+
+<AppLayout title="Sensor Configuration | HPEE">
+  <div class="flex justify-between items-center mb-6">
+    <h1 class="text-2xl font-bold text-slate-900">Sensor Configuration</h1>
+    <a href={`/facility/${facilityId}/sensors/types`} class="text-blue-600 hover:text-blue-800 font-medium text-sm">
+      Manage Sensor Types →
+    </a>
+    <div>
+      <h1 class="text-2xl font-bold text-slate-900">Sensor Configuration</h1>
+      <p class="text-sm text-slate-500 mt-1">Configure hardware nodes, dynamic measurements, and alerting thresholds.</p>
+    </div>
+    <div class="flex gap-3">
+      <a href={`/facility/${facilityId}/blueprint`} class="inline-flex items-center px-4 py-2 border border-slate-300 rounded-md shadow-sm text-sm font-medium text-slate-700 bg-white hover:bg-slate-50">
+        Place on Blueprint
+      </a>
+      <a href={`/facility/${facilityId}/sensors/types`} class="inline-flex items-center px-4 py-2 bg-blue-600 border border-transparent rounded-md shadow-sm text-sm font-medium text-white hover:bg-blue-700">
+        Manage Sensor Types →
+      </a>
+    </div>
+  </div>
+  
+  <div class="bg-white p-6 rounded-xl border border-slate-200 shadow-sm">
+    <p class="text-slate-500 italic">SensorTable and SensorForm components would go here. Please refer to /sensors/types for managing sensor types.</p>
+  </div>
+  <SensorConfigurator client:load facilityId={facilityId} />
+</AppLayout>

@@ -1,0 +1,47 @@
+---
+interface Props {
+  title?: string;
+}
+
+const { title = "HPEE - B2B Facility Configuration" } = Astro.props;
+import '../styles/global.css';
+---
+
+<!DOCTYPE html>
+<html lang="en">
+  <head>
+    <meta charset="UTF-8" />
+    <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+    <title>{title}</title>
+    <link rel="preconnect" href="https://fonts.googleapis.com">
+    <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+    <link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700&display=swap" rel="stylesheet">
+  </head>
+  <body class="bg-slate-50 min-h-screen flex flex-col font-sans">
+    <header class="bg-slate-900 text-white sticky top-0 z-50">
+      <div class="max-w-7xl mx-auto px-4">
+        <div class="flex items-center h-16 justify-between">
+          <div class="flex items-center gap-8">
+            <a href="/" class="text-xl font-bold tracking-tight">HPEE</a>
+            <nav class="hidden md:flex space-x-1">
+              <a href="/facility/demo/configuration" class="px-3 py-2 rounded-md text-sm font-medium hover:bg-slate-800 transition-colors">Overview</a>
+              <a href="/facility/demo/sensors" class="px-3 py-2 rounded-md text-sm font-medium hover:bg-slate-800 transition-colors">Sensors</a>
+              <a href="/facility/demo/blueprint" class="px-3 py-2 rounded-md text-sm font-medium hover:bg-slate-800 transition-colors">Blueprint</a>
+              <a href="/facility/demo/dashboard-config" class="px-3 py-2 rounded-md text-sm font-medium hover:bg-slate-800 transition-colors">Dashboard</a>
+              <a href="/facility/demo/display-config" class="px-3 py-2 rounded-md text-sm font-medium hover:bg-slate-800 transition-colors">Display Config</a>
+            </nav>
+          </div>
+          <div>
+            <a href="/setup" class="px-4 py-2 bg-blue-600 hover:bg-blue-700 rounded-md text-sm font-medium transition-colors">
+              Setup Wizard
+            </a>
+          </div>
+        </div>
+      </div>
+    </header>
+
+    <main class="flex-grow max-w-7xl w-full mx-auto px-4 py-6">
+      <slot />
+    </main>
+  </body>
+</html>
