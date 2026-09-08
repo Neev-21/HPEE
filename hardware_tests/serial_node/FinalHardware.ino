@@ -76,10 +76,8 @@ void loop() {
   float windSpeed = (potValue / 1023.0) * 25.0; // 0 - 25 m/s
   float windDir = (potValue / 1023.0) * 359.0;   // 0 - 359 deg (strictly < 360)
 
-  // 2. MQ-2 Smoke/Gas Sensor (Higher value = More Gas/Smoke, mapped to SO2 range)
   // 2. MQ-2 Smoke/Gas Sensor (Higher value = More Gas/Smoke, mapped to Smoke & SO2 range)
   int mq2Raw = getAveragedAnalog(MQ2_PIN);
-  float so2 = (mq2Raw / 1023.0) * 150.0; // 0 - 150 ug/m3
   float smoke = (mq2Raw / 1023.0) * 100.0; // 0 - 100% Smoke Sensor Reading (ppm / level)
   float so2 = (mq2Raw / 1023.0) * 150.0;   // 0 - 150 ug/m3
 
