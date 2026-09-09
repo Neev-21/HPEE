@@ -19,8 +19,8 @@ Instead of manually opening multiple terminals for the database, API, MQTT broke
    ```
 This single command starts:
 - **postgres**: The PostGIS database.
-- **mosquitto**: The MQTT broker (listening on port 1883).
-- **api**: The FastAPI backend (listening on port 8000).
+- **mosquitto**: The MQTT broker (listening on port 1884 on host).
+- **api**: The FastAPI backend (listening on port 8100).
 - **ingestion-worker**: The Python background task that listens to MQTT and POSTs to the API.
 
 ## Step 2: Prepare the Arduino
@@ -62,5 +62,5 @@ docker-compose logs -f ingestion-worker
 ```
 
 ## Troubleshooting
-- **Port 8000 conflict:** If `docker-compose up` fails because port 8000 is in use, make sure you don't have `uvicorn` running manually in another terminal.
+- **Port 8100 conflict:** If `docker-compose up` fails because port 8100 is in use, make sure you don't have `uvicorn` running manually in another terminal.
 - **Access Denied on COM Port:** If the `mqtt_bridge.py` script throws an access denied error, ensure the Arduino Serial Monitor is closed. Only one program can read a Serial port at a time.

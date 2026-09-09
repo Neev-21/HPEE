@@ -150,14 +150,66 @@ def get_nodes_geojson(db: Session) -> Dict[str, Any]:
             .first()
         )
 
-        pm25 = latest_reading.pm25 if latest_reading else None
-        so2 = latest_reading.so2 if latest_reading else None
-        temp = latest_reading.temperature if latest_reading else None
-        hum = latest_reading.humidity if latest_reading else None
-        ws = latest_reading.wind_speed if latest_reading else None
-        wd = latest_reading.wind_direction if latest_reading else None
+        raw_measurements = {}
+        if latest_reading and latest_reading.raw_payload and isinstance(latest_reading.raw_payload, dict):
+            raw_measurements = latest_reading.raw_payload.get("measurements", {}) or {}
+
+        def extract_metric(key: str):
+            value = raw_measurements.get(key)
+            if isinstance(value, dict):
+                return value.get("value")
+            return None
+
+        pm25 = latest_reading.pm25 if latest_reading else extract_metric("pm25")
+        pm10 = extract_metric("pm10") if latest_reading else None
+        so2 = latest_reading.so2 if latest_reading else extract_metric("so2")
+        nox = extract_metric("nox")
+        no2 = extract_metric("no2")
+        co = extract_metric("co")
+        co2 = extract_metric("co2")
+        temp = latest_reading.temperature if latest_reading else extract_metric("temperature")
+        hum = latest_reading.humidity if latest_reading else extract_metric("humidity")
+        ws = latest_reading.wind_speed if latest_reading else extract_metric("wind_speed")
+        wd = latest_reading.wind_direction if latest_reading else extract_metric("wind_direction")
 
         aqi_info = _get_aqi_category(pm25, so2)
+
+        properties = {
+            "node_id": node_id,
+            "village_id": str(r[1]) if r[1] else None,
+            "village_name": r[8] or "Ankleshwar Rural",
+            "district": r[9] or "Bharuch",
+            "status": r[2],
+            "battery_percent": r[3],
+            "signal_strength": r[4],
+            "last_seen_at": r[5].isoformat() if r[5] else None,
+            "pm25": pm25,
+            "pm10": pm10,
+            "so2": so2,
+            "nox": nox,
+            "no2": no2,
+            "co": co,
+            "co2": co2,
+            "temperature": temp,
+            "humidity": hum,
+            "wind_speed": ws,
+            "wind_direction": wd,
+            "latest_telemetry": {
+                "pm25": pm25,
+                "pm10": pm10,
+                "so2": so2,
+                "nox": nox,
+                "no2": no2,
+                "co": co,
+                "co2": co2,
+                "temperature": temp,
+                "humidity": hum,
+                "wind_speed": ws,
+                "wind_direction": wd,
+            },
+            "aqi": aqi_info.get("category"),
+            "aqi_color": aqi_info.get("color"),
+        }
 
         features.append({
             "type": "Feature",
@@ -165,25 +217,7 @@ def get_nodes_geojson(db: Session) -> Dict[str, Any]:
                 "type": "Point",
                 "coordinates": [float(r[7]), float(r[6])],
             },
-            "properties": {
-                "node_id": node_id,
-                "village_id": str(r[1]) if r[1] else None,
-                "village_name": r[8] or "Ankleshwar Rural",
-                "district": r[9] or "Bharuch",
-                "status": r[2],
-                "battery_percent": r[3],
-                "signal_strength": r[4],
-                "last_seen_at": r[5].isoformat() if r[5] else None,
-                "latest_telemetry": {
-                    "pm25": pm25,
-                    "so2": so2,
-                    "temperature": temp,
-                    "humidity": hum,
-                    "wind_speed": ws,
-                    "wind_direction": wd,
-                },
-                "aqi": aqi_info,
-            },
+            "properties": properties,
         })
 
     return {

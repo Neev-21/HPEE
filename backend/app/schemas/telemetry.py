@@ -17,9 +17,24 @@ class BaseMeasurementSchema(BaseModel):
 class PM25Schema(BaseMeasurementSchema):
     value: float = Field(..., ge=0)
 
+class PM10Schema(BaseMeasurementSchema):
+    value: float = Field(..., ge=0)
+
 class SO2Schema(BaseMeasurementSchema):
     value: float = Field(..., ge=0)
-    
+
+class NOXSchema(BaseMeasurementSchema):
+    value: float = Field(..., ge=0)
+
+class NO2Schema(BaseMeasurementSchema):
+    value: float = Field(..., ge=0)
+
+class COSchema(BaseMeasurementSchema):
+    value: float = Field(..., ge=0)
+
+class CO2Schema(BaseMeasurementSchema):
+    value: float = Field(..., ge=0)
+
 class WindSpeedSchema(BaseMeasurementSchema):
     value: float = Field(..., ge=0)
 
@@ -32,7 +47,12 @@ class WindDirectionSchema(BaseMeasurementSchema):
 
 class MeasurementsBlockSchema(BaseModel):
     pm25: Optional[PM25Schema] = None
+    pm10: Optional[PM10Schema] = None
     so2: Optional[SO2Schema] = None
+    nox: Optional[NOXSchema] = None
+    no2: Optional[NO2Schema] = None
+    co: Optional[COSchema] = None
+    co2: Optional[CO2Schema] = None
     temperature: Optional[BaseMeasurementSchema] = None
     humidity: Optional[HumiditySchema] = None
     wind_speed: Optional[WindSpeedSchema] = None

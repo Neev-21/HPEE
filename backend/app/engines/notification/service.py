@@ -26,7 +26,7 @@ def dispatch_pollution_alert(
     event_id: str,
     channel: str = "whatsapp",
     lang: str = "gu",
-    base_portal_url: str = "http://localhost:3000",
+    base_portal_url: str = "http://localhost:3100",
 ) -> List[Notification]:
     """
     Sends automated localized alert notifications for a detected pollution surge.

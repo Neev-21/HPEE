@@ -47,7 +47,7 @@ VILLAGES_DATA = [
     {"name": "Piraman",                  "district": "Bharuch", "state": "Gujarat", "longitude": 73.0300, "latitude": 21.6240, "population": 12000},
     {"name": "Jitali",                   "district": "Bharuch", "state": "Gujarat", "longitude": 73.0420, "latitude": 21.6450, "population": 9200},
     {"name": "Dadhal",                   "district": "Bharuch", "state": "Gujarat", "longitude": 72.9920, "latitude": 21.6580, "population": 6400},
-    {"name": "Panoli GIDC Residential",  "district": "Bharuch", "state": "Gujarat", "longitude": 72.9640, "latitude": 21.5320, "population": 18000},
+    {"name": "Panoli GIDC Residential",  "district": "Bharuch", "state": "Gujarat", "longitude": 72.9640, "latitude": 21.5320, "population": 18080},
     {"name": "Bakrol",                   "district": "Bharuch", "state": "Gujarat", "longitude": 72.9810, "latitude": 21.5450, "population": 5800},
     {"name": "Kharod",                   "district": "Bharuch", "state": "Gujarat", "longitude": 72.9490, "latitude": 21.5210, "population": 7100},
     {"name": "Dahej Port Village",       "district": "Bharuch", "state": "Gujarat", "longitude": 72.5850, "latitude": 21.7120, "population": 14000},

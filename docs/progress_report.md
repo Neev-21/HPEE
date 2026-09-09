@@ -194,4 +194,4 @@
 | **Test Suite** | ✅ Passing | 26 tests |
 | **Documentation** | ✅ Comprehensive | 9 docs |
 
-**Next immediate priority:** Phase 3 — Scaffold the Next.js inspector dashboard, connect to running backend at `localhost:8000`, implement the 5 core views per `UI_SPECIFICATION.md`.
+**Next immediate priority:** Phase 3 — Scaffold the Next.js inspector dashboard, connect to running backend at `localhost:8100`, implement the 5 core views per `UI_SPECIFICATION.md`.

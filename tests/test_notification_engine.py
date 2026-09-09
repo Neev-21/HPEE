@@ -18,7 +18,7 @@ def test_multilingual_template_rendering():
         "culprit_name": "Gujarat Organics Ltd",
         "confidence_percent": 88.0,
         "wind_direction": 135.0,
-        "action_url": "http://localhost:3000/events/test-event-123",
+        "action_url": "http://localhost:3100/events/test-event-123",
     }
 
     # 1. Gujarati
@@ -41,7 +41,7 @@ def test_multilingual_template_rendering():
     assert "HPEE Alert" in title_en
     assert "Piraman" in title_en
     assert "Gujarat Organics Ltd" in body_en
-    assert "http://localhost:3000/events/test-event-123" in body_en
+    assert "http://localhost:3100/events/test-event-123" in body_en
 
 
 
